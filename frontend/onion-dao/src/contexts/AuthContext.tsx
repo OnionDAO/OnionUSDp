@@ -27,11 +27,12 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   walletInfo: WalletInfo | null;
   loading: boolean;
+  isWalletConnected: boolean; // Helper for easy wallet status checking
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, userType: UserType, additionalData: any) => Promise<UserProfile>;
   signOut: () => Promise<void>;
   connectWallet: () => Promise<WalletInfo | null>;
-  disconnectWallet: () => void;
+  disconnectWallet: () => Promise<void>; // Completely forgets wallet
   getStoredWallet: () => WalletInfo | null;
 }
 
@@ -51,44 +52,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Wallet persistence functions
+  // Wallet persistence functions - now using Firebase only
   const getStoredWallet = (): WalletInfo | null => {
-    try {
-      const stored = localStorage.getItem('onion_wallet_info');
-      if (stored) {
-        const walletData = JSON.parse(stored);
-        // Check if wallet connection is recent (within 7 days)
-        const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-        if (Date.now() - walletData.lastConnected < maxAge) {
-          return walletData;
-        }
+    // Wallet info is now loaded from Firebase user profile only
+    return userProfile?.walletInfo || null;
+  };
+
+  const storeWallet = async (wallet: WalletInfo) => {
+    // Store wallet info in Firebase user profile
+    if (currentUser && userProfile) {
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        await setDoc(userRef, { walletInfo: wallet }, { merge: true });
+        console.log('Wallet info saved to Firebase');
+        
+        // Update local userProfile state
+        setUserProfile({
+          ...userProfile,
+          walletInfo: wallet
+        });
+      } catch (error) {
+        console.error('Error saving wallet to Firebase:', error);
       }
-    } catch (error) {
-      console.error('Error retrieving stored wallet:', error);
-    }
-    return null;
-  };
-
-  const storeWallet = (wallet: WalletInfo) => {
-    try {
-      localStorage.setItem('onion_wallet_info', JSON.stringify(wallet));
-    } catch (error) {
-      console.error('Error storing wallet:', error);
     }
   };
 
-  const clearStoredWallet = () => {
-    try {
-      localStorage.removeItem('onion_wallet_info');
-    } catch (error) {
-      console.error('Error clearing stored wallet:', error);
+  const clearStoredWallet = async () => {
+    // Remove wallet info from Firebase
+    if (currentUser && userProfile) {
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        await setDoc(userRef, { walletInfo: null }, { merge: true });
+        console.log('Wallet info removed from Firebase');
+        
+        // Update local userProfile state
+        setUserProfile({
+          ...userProfile,
+          walletInfo: undefined
+        });
+      } catch (error) {
+        console.error('Error removing wallet from Firebase:', error);
+      }
     }
   };
 
   const connectWallet = async (): Promise<WalletInfo | null> => {
     try {
+      console.log('Attempting to connect wallet...');
+      
       if (!(window as any).solana) {
         throw new Error('No Solana wallet detected. Please install Phantom or another Solana wallet.');
+      }
+
+      // Check if already connected
+      if ((window as any).solana.isConnected && walletInfo?.connected) {
+        console.log('Wallet already connected, refreshing info...');
+        const publicKey = (window as any).solana.publicKey.toString();
+        const updatedWallet: WalletInfo = {
+          address: `${publicKey.slice(0, 6)}...${publicKey.slice(-4)}`,
+          publicKey: publicKey,
+          connected: true,
+          lastConnected: Date.now()
+        };
+        setWalletInfo(updatedWallet);
+        await storeWallet(updatedWallet);
+        return updatedWallet;
       }
 
       const response = await (window as any).solana.connect();
@@ -104,25 +132,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         lastConnected: Date.now()
       };
 
+      console.log('Wallet connected successfully:', walletData.address);
       setWalletInfo(walletData);
-      storeWallet(walletData);
-      
-      // Save wallet info to database if user is logged in
-      if (currentUser && userProfile) {
-        try {
-          const userRef = doc(db, 'users', currentUser.uid);
-          await setDoc(userRef, { walletInfo: walletData }, { merge: true });
-          console.log('Wallet info saved to database');
-          
-          // Update local userProfile state
-          setUserProfile({
-            ...userProfile,
-            walletInfo: walletData
-          });
-        } catch (error) {
-          console.error('Error saving wallet to database:', error);
-        }
-      }
+      await storeWallet(walletData);
       
       return walletData;
     } catch (error) {
@@ -132,62 +144,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const disconnectWallet = async () => {
+    console.log('Permanently disconnecting wallet and clearing from Firebase...');
     setWalletInfo(null);
-    clearStoredWallet();
-    
-    // Remove wallet info from database if user is logged in
-    if (currentUser && userProfile) {
-      try {
-        const userRef = doc(db, 'users', currentUser.uid);
-        await setDoc(userRef, { walletInfo: null }, { merge: true });
-        console.log('Wallet info removed from database');
-        
-        // Update local userProfile state
-        setUserProfile({
-          ...userProfile,
-          walletInfo: undefined
-        });
-      } catch (error) {
-        console.error('Error removing wallet from database:', error);
-      }
-    }
+    await clearStoredWallet(); // This removes from Firebase
     
     try {
-      if ((window as any).solana) {
-        (window as any).solana.disconnect();
+      if ((window as any).solana && (window as any).solana.isConnected) {
+        await (window as any).solana.disconnect();
       }
     } catch (error) {
       console.error('Error disconnecting wallet:', error);
     }
   };
 
-  const attemptAutoReconnect = async () => {
-    const storedWallet = getStoredWallet();
+  const attemptAutoReconnect = async (profileWalletInfo?: WalletInfo) => {
+    const storedWallet = profileWalletInfo || getStoredWallet();
     if (storedWallet && (window as any).solana) {
       try {
+        // Check if wallet is recent (within 30 days)
+        const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+        if (Date.now() - storedWallet.lastConnected > maxAge) {
+          console.log('Stored wallet is too old, requiring fresh connection');
+          return;
+        }
+
         // Try silent connection first
         const response = await (window as any).solana.connect({ onlyIfTrusted: true });
         if (response?.publicKey) {
           const publicKey = response.publicKey.toString();
           // Verify the stored wallet matches the connected one
           if (publicKey === storedWallet.publicKey) {
-            setWalletInfo({
+            const updatedWallet = {
               ...storedWallet,
+              connected: true,
               lastConnected: Date.now()
-            });
-            storeWallet({
-              ...storedWallet,
-              lastConnected: Date.now()
-            });
+            };
+            setWalletInfo(updatedWallet);
+            await storeWallet(updatedWallet);
             console.log('Wallet auto-reconnected successfully');
           } else {
-            // Different wallet, clear stored data
-            clearStoredWallet();
+            console.log('Different wallet detected, clearing stored data');
+            await clearStoredWallet();
           }
+        } else {
+          // No wallet response but we have stored info, just restore the stored wallet
+          console.log('No wallet response, but restoring stored wallet info');
+          setWalletInfo({
+            ...storedWallet,
+            connected: true,
+            lastConnected: Date.now()
+          });
         }
       } catch (error) {
-        console.log('Auto-reconnect failed, user will need to connect manually');
-        clearStoredWallet();
+        console.log('Auto-reconnect failed silently, restoring stored wallet info');
+        // Even if silent connection fails, we can still restore the wallet info
+        // The user might need to approve transactions, but they won't need to reconnect
+        setWalletInfo({
+          ...storedWallet,
+          connected: true,
+          lastConnected: Date.now()
+        });
       }
     }
   };
@@ -237,9 +253,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    console.log('Signing out - preserving wallet info for next login...');
     await firebaseSignOut(auth);
     setUserProfile(null);
-    await disconnectWallet(); // Also disconnect wallet on sign out
+    // Only clear local wallet state, keep Firebase wallet info for next login
+    setWalletInfo(null);
+    
+    // Disconnect from wallet extension but don't clear Firebase data
+    try {
+      if ((window as any).solana && (window as any).solana.isConnected) {
+        await (window as any).solana.disconnect();
+      }
+    } catch (error) {
+      console.error('Error disconnecting wallet on sign out:', error);
+    }
   };
 
   const fetchUserProfile = async (user: User) => {
@@ -253,11 +280,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('User profile fetched successfully:', profile);
         setUserProfile(profile);
         
-        // Load wallet info from database if available
+        // Load wallet info from database if available and attempt auto-reconnection
         if (profile.walletInfo) {
-          console.log('Loading wallet info from database:', profile.walletInfo);
+          console.log('✅ Wallet found in Firebase - auto-connecting...', profile.walletInfo.address);
           setWalletInfo(profile.walletInfo);
-          storeWallet(profile.walletInfo);
+          // Attempt auto-reconnection with the loaded wallet info
+          await attemptAutoReconnect(profile.walletInfo);
+          console.log('🎉 Wallet auto-connection complete! No need to connect again.');
+        } else {
+          console.log('📝 No saved wallet found - user will need to connect wallet');
         }
       } else {
         console.warn('No user profile document found for UID:', user.uid);
@@ -288,10 +319,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(user);
       if (user) {
         await fetchUserProfile(user);
-        // Attempt wallet auto-reconnect after user authentication
-        await attemptAutoReconnect();
+        // Auto-reconnection is now handled within fetchUserProfile
       } else {
         setUserProfile(null);
+        setWalletInfo(null); // Clear local wallet state only
       }
       setLoading(false);
       console.log('Auth loading complete');
@@ -300,11 +331,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsubscribe;
   }, []);
 
+  // Add wallet event listeners for automatic handling of wallet state changes
+  useEffect(() => {
+    const handleWalletEvents = () => {
+      if ((window as any).solana) {
+        // Listen for wallet disconnection
+        (window as any).solana.on('disconnect', () => {
+          console.log('Wallet disconnected externally');
+          setWalletInfo(null);
+          // Note: We don't clear from Firebase here as user might want to reconnect
+        });
+
+        // Listen for account changes
+        (window as any).solana.on('accountChanged', async (publicKey: any) => {
+          if (publicKey && walletInfo) {
+            console.log('Wallet account changed');
+            const newPublicKey = publicKey.toString();
+            
+            // Update wallet info if account changed
+            if (newPublicKey !== walletInfo.publicKey) {
+              const updatedWallet: WalletInfo = {
+                address: `${newPublicKey.slice(0, 6)}...${newPublicKey.slice(-4)}`,
+                publicKey: newPublicKey,
+                connected: true,
+                lastConnected: Date.now()
+              };
+              setWalletInfo(updatedWallet);
+              await storeWallet(updatedWallet);
+            }
+          }
+        });
+      }
+    };
+
+    // Set up wallet event listeners when wallet extension is available
+    if ((window as any).solana) {
+      handleWalletEvents();
+    } else {
+      // Wait for wallet to be available
+      const checkWallet = setInterval(() => {
+        if ((window as any).solana) {
+          handleWalletEvents();
+          clearInterval(checkWallet);
+        }
+      }, 1000);
+      
+      return () => clearInterval(checkWallet);
+    }
+  }, [walletInfo]);
+
   const value = {
     currentUser,
     userProfile,
     walletInfo,
     loading,
+    isWalletConnected: !!(walletInfo?.connected),
     signIn,
     signUp,
     signOut,

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { employeeService, transactionService } from '../../services/firestoreService';
+import type { Employee, Transaction } from '../../types';
+import SolanaPayDashboard from '../SolanaPayDashboard';
 import './Dashboard.css';
 
 // Solana wallet type declarations
@@ -12,24 +15,7 @@ declare global {
   }
 }
 
-interface Employee {
-  id: string;
-  name: string;
-  email: string;
-  walletAddress?: string;
-  position: string;
-  status: 'active' | 'inactive';
-  dateAdded: string;
-}
 
-interface Transaction {
-  id: string;
-  type: 'payroll' | 'bonus' | 'transfer';
-  recipient: string;
-  date: string;
-  status: 'completed' | 'pending' | 'processing';
-  txHash?: string;
-}
 
 interface CompanyWallet {
   address: string;
@@ -38,10 +24,10 @@ interface CompanyWallet {
   isConnected: boolean;
 }
 
-type TabType = 'overview' | 'employees' | 'treasury' | 'transactions';
+type TabType = 'overview' | 'employees' | 'treasury' | 'transactions' | 'solana-pay';
 
 const CorporationDashboard: React.FC = () => {
-  const { userProfile, walletInfo, connectWallet, disconnectWallet, signOut } = useAuth();
+  const { userProfile, walletInfo, isWalletConnected, connectWallet, disconnectWallet, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -53,38 +39,50 @@ const CorporationDashboard: React.FC = () => {
   const [employeeFormData, setEmployeeFormData] = useState({
     name: '',
     email: '',
-    position: '',
+    department: '',
+    salary: 0,
     walletAddress: ''
   });
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: 'dashboard' },
     { id: 'employees', label: 'Employee Registry', icon: 'people' },
     { id: 'treasury', label: 'Payroll Treasury', icon: 'account_balance' },
-    { id: 'transactions', label: 'Payment History', icon: 'receipt_long' }
+    { id: 'transactions', label: 'Payment History', icon: 'receipt_long' },
+    { id: 'solana-pay', label: 'Solana Pay', icon: 'qr_code' }
   ];
 
-  // Load saved data from localStorage
+  // Load employees from Firebase
   useEffect(() => {
-    const savedEmployees = localStorage.getItem('onion_corp_employees');
-    const savedTransactions = localStorage.getItem('onion_corp_transactions');
-    
-    if (savedEmployees) {
-      try {
-        setEmployees(JSON.parse(savedEmployees));
-      } catch (error) {
-        console.error('Error loading employees:', error);
+    const loadEmployees = async () => {
+      if (userProfile?.uid && userProfile.userType === 'corporation') {
+        try {
+          const corporationEmployees = await employeeService.getEmployeesByCorporation(userProfile.uid);
+          setEmployees(corporationEmployees);
+        } catch (error) {
+          console.error('Error loading employees from Firebase:', error);
+        }
       }
-    }
+    };
     
-    if (savedTransactions) {
-      try {
-        setTransactions(JSON.parse(savedTransactions));
-      } catch (error) {
-        console.error('Error loading transactions:', error);
+    loadEmployees();
+    
+    // Load transactions from Firebase
+    const loadTransactions = async () => {
+      if (userProfile?.uid && userProfile.userType === 'corporation') {
+        try {
+          const corporationTransactions = await transactionService.getTransactionsByCorporation(userProfile.uid);
+          setTransactions(corporationTransactions);
+        } catch (error) {
+          console.error('Error loading transactions from Firebase:', error);
+        }
       }
-    }
-  }, []);
+    };
+    
+    loadTransactions();
+  }, [userProfile]);
 
   const handleConnectWallet = async () => {
     setIsLoading(true);
@@ -112,38 +110,58 @@ const CorporationDashboard: React.FC = () => {
     }
   };
 
-  const addEmployee = () => {
-    if (!employeeFormData.name || !employeeFormData.email || !employeeFormData.position) {
-      alert('Please fill in all required fields');
+  const addEmployee = async () => {
+    if (!employeeFormData.name || !employeeFormData.email || !employeeFormData.department || !employeeFormData.salary) {
+      setSubmitError('Please fill in all required fields');
       return;
     }
 
-    const newEmployee: Employee = {
-      id: Date.now().toString(),
-      name: employeeFormData.name,
-      email: employeeFormData.email,
-      position: employeeFormData.position,
-      walletAddress: employeeFormData.walletAddress || undefined,
-      status: 'active',
-      dateAdded: new Date().toISOString().split('T')[0]
-    };
+    if (!userProfile?.uid) {
+      setSubmitError('User profile not found');
+      return;
+    }
 
-    const updatedEmployees = [...employees, newEmployee];
-    setEmployees(updatedEmployees);
-    localStorage.setItem('onion_corp_employees', JSON.stringify(updatedEmployees));
-    
-    // Reset form
-    setEmployeeFormData({
-      name: '',
-      email: '',
-      position: '',
-      walletAddress: ''
-    });
-    setIsAddEmployeeModalOpen(false);
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const employeeData = {
+        name: employeeFormData.name,
+        email: employeeFormData.email,
+        walletAddress: employeeFormData.walletAddress || '',
+        corporationId: userProfile.uid,
+        department: employeeFormData.department,
+        salary: employeeFormData.salary,
+        status: 'active' as const
+      };
+
+      const employeeId = await employeeService.createEmployee(employeeData);
+      
+      // Reload employees from Firebase
+      const updatedEmployees = await employeeService.getEmployeesByCorporation(userProfile.uid);
+      setEmployees(updatedEmployees);
+      
+      // Reset form
+      setEmployeeFormData({
+        name: '',
+        email: '',
+        department: '',
+        salary: 0,
+        walletAddress: ''
+      });
+      setIsAddEmployeeModalOpen(false);
+      
+      console.log('Employee added successfully with ID:', employeeId);
+    } catch (error) {
+      console.error('Error adding employee:', error);
+      setSubmitError('Failed to add employee. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderTabContent = () => {
-    if (!walletInfo?.connected) {
+    if (!isWalletConnected) {
       return null;
     }
 
@@ -163,7 +181,7 @@ const CorporationDashboard: React.FC = () => {
               <div className="card-content">
                 <div className="transaction-row">
                   <span className="tx-label">Wallet Address:</span>
-                  <span className="tx-address">{walletInfo.address}</span>
+                  <span className="tx-address">{walletInfo?.address}</span>
                 </div>
                 <div className="transaction-row">
                   <span className="tx-label">Network:</span>
@@ -172,7 +190,7 @@ const CorporationDashboard: React.FC = () => {
                 <div className="transaction-row">
                   <span className="tx-label">Last Connected:</span>
                   <span className="tx-value">
-                    {new Date(walletInfo.lastConnected).toLocaleDateString()}
+                    {walletInfo?.lastConnected ? new Date(walletInfo.lastConnected).toLocaleDateString() : 'Unknown'}
                   </span>
                 </div>
               </div>
@@ -229,6 +247,14 @@ const CorporationDashboard: React.FC = () => {
                 </div>
               </div>
               
+              <div className="action-card" onClick={() => setActiveTab('solana-pay')}>
+                <div className="action-icon">qr_code</div>
+                <div className="action-content">
+                  <h4>Solana Pay</h4>
+                  <p>Generate QR codes for instant employee payments</p>
+                </div>
+              </div>
+              
               <div className="action-card">
                 <div className="action-icon">analytics</div>
                 <div className="action-content">
@@ -276,7 +302,7 @@ const CorporationDashboard: React.FC = () => {
                     <div className="employee-header">
                       <div className="employee-info">
                         <h4>{employee.name}</h4>
-                        <p>{employee.position}</p>
+                        <p>{employee.department}</p>
                         <span className="employee-email">{employee.email}</span>
                       </div>
                       <div className={`employee-status ${employee.status}`}>
@@ -284,6 +310,10 @@ const CorporationDashboard: React.FC = () => {
                       </div>
                     </div>
                     <div className="employee-content">
+                      <div className="transaction-row">
+                        <span className="tx-label">Salary:</span>
+                        <span className="tx-value">${employee.salary.toLocaleString()}</span>
+                      </div>
                       <div className="transaction-row">
                         <span className="tx-label">Wallet Address:</span>
                         <span className="tx-value">
@@ -296,7 +326,7 @@ const CorporationDashboard: React.FC = () => {
                       </div>
                       <div className="transaction-row">
                         <span className="tx-label">Date Added:</span>
-                        <span className="tx-value">{employee.dateAdded}</span>
+                        <span className="tx-value">{employee.createdAt.toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
@@ -328,7 +358,7 @@ const CorporationDashboard: React.FC = () => {
                   </div>
                   <div className="transaction-row">
                     <span className="tx-label">Address:</span>
-                    <span className="tx-address">{walletInfo.address}</span>
+                    <span className="tx-address">{walletInfo?.address}</span>
                   </div>
                   <div className="transaction-row">
                     <span className="tx-label">Status:</span>
@@ -403,10 +433,10 @@ const CorporationDashboard: React.FC = () => {
                         <span className="tx-label">Date:</span>
                         <span className="tx-value">{transaction.date}</span>
                       </div>
-                      {transaction.txHash && (
+                      {transaction.signature && (
                         <div className="transaction-row">
                           <span className="tx-label">Transaction:</span>
-                          <span className="tx-address">{transaction.txHash}</span>
+                          <span className="tx-address">{transaction.signature}</span>
                         </div>
                       )}
                     </div>
@@ -414,6 +444,23 @@ const CorporationDashboard: React.FC = () => {
                 ))}
               </div>
             )}
+          </div>
+        );
+
+      case 'solana-pay':
+        return (
+          <div className="solana-pay-content">
+            <SolanaPayDashboard 
+              employees={employees}
+              onPaymentCreated={(payment) => {
+                console.log('Payment created:', payment);
+                // Optionally refresh transactions or show success message
+              }}
+              onBulkPayrollCreated={(payroll) => {
+                console.log('Bulk payroll created:', payroll);
+                // Optionally handle bulk payroll success
+              }}
+            />
           </div>
         );
 
@@ -444,7 +491,11 @@ const CorporationDashboard: React.FC = () => {
             <div className="header-badge">
               <span className="badge-text">Corporate Treasury</span>
             </div>
-            <button className="btn btn-secondary btn-small logout-btn" onClick={handleLogout}>
+            <button 
+              className="btn btn-secondary btn-small logout-btn" 
+              onClick={handleLogout}
+              title="Sign out (wallet will be saved for next login)"
+            >
               <span className="material-icons">logout</span>
               Sign Out
             </button>
@@ -479,7 +530,7 @@ const CorporationDashboard: React.FC = () => {
         )}
 
         {/* Wallet Connection */}
-        {!walletError && !walletInfo?.connected ? (
+        {!walletError && !isWalletConnected ? (
           <div className="connect-card">
             <div className="card-header">
               <div className="card-title">
@@ -504,31 +555,36 @@ const CorporationDashboard: React.FC = () => {
               </div>
             </div>
           </div>
-        ) : walletInfo?.connected && (
+        ) : isWalletConnected && (
           <>
             {/* Wallet Connected Info */}
             <div className="connect-card">
               <div className="card-header">
                 <div className="card-title">
                   <span className="material-icons">check_circle</span>
-                  Wallet Connected
+                  Wallet Connected & Saved
                 </div>
                 <button 
                   className="btn btn-secondary btn-small" 
                   onClick={handleDisconnectWallet}
+                  title="Permanently disconnect and forget this wallet"
                 >
                   <span className="material-icons">link_off</span>
-                  Disconnect
+                  Forget Wallet
                 </button>
               </div>
               <div className="card-content">
                 <div className="transaction-row">
                   <span className="tx-label">Address:</span>
-                  <span className="tx-address">{walletInfo.address}</span>
+                  <span className="tx-address">{walletInfo?.address}</span>
                 </div>
                 <div className="transaction-row">
                   <span className="tx-label">Status:</span>
-                  <span className="tx-value private">🔒 Ready for Confidential Transactions</span>
+                  <span className="tx-value private">🔒 Saved & Ready</span>
+                </div>
+                <div className="transaction-row">
+                  <span className="tx-label">Auto-Login:</span>
+                  <span className="tx-value private">✅ Enabled</span>
                 </div>
               </div>
             </div>
@@ -589,13 +645,24 @@ const CorporationDashboard: React.FC = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Position *</label>
+                  <label className="form-label">Department *</label>
                   <input 
                     type="text"
                     className="form-input"
-                    value={employeeFormData.position}
-                    onChange={(e) => setEmployeeFormData({...employeeFormData, position: e.target.value})}
-                    placeholder="Enter job title"
+                    value={employeeFormData.department}
+                    onChange={(e) => setEmployeeFormData({...employeeFormData, department: e.target.value})}
+                    placeholder="Enter department"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Annual Salary *</label>
+                  <input 
+                    type="number"
+                    className="form-input"
+                    value={employeeFormData.salary}
+                    onChange={(e) => setEmployeeFormData({...employeeFormData, salary: Number(e.target.value)})}
+                    placeholder="Enter annual salary"
+                    min="0"
                   />
                 </div>
                 <div className="form-group">
@@ -609,19 +676,32 @@ const CorporationDashboard: React.FC = () => {
                   />
                 </div>
               </div>
+              {submitError && (
+                <div className="modal-error">
+                  <span className="material-icons">error</span>
+                  {submitError}
+                </div>
+              )}
               <div className="modal-footer">
                 <button 
                   className="btn btn-secondary" 
-                  onClick={() => setIsAddEmployeeModalOpen(false)}
+                  onClick={() => {
+                    setIsAddEmployeeModalOpen(false);
+                    setSubmitError(null);
+                  }}
+                  disabled={isSubmitting}
                 >
                   Cancel
                 </button>
                 <button 
                   className="btn btn-primary" 
                   onClick={addEmployee}
+                  disabled={isSubmitting}
                 >
-                  <span className="material-icons">add</span>
-                  Add Employee
+                  <span className="material-icons">
+                    {isSubmitting ? 'hourglass_empty' : 'add'}
+                  </span>
+                  {isSubmitting ? 'Adding...' : 'Add Employee'}
                 </button>
               </div>
             </div>

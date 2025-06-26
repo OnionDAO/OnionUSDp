@@ -755,6 +755,23 @@
   padding: var(--space-6);
 }
 
+.modal-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: var(--radius-md);
+  color: var(--bank-red);
+  font-size: var(--font-sm);
+  margin: var(--space-4) var(--space-6) 0;
+}
+
+.modal-error .material-icons {
+  font-size: var(--font-base);
+}
+
 .modal-footer {
   display: flex;
   gap: var(--space-3);
@@ -841,4 +858,122 @@
     align-items: flex-start;
     gap: var(--space-2);
   }
+}
+
+/* ===== SOLANA PAY INTEGRATION ===== */
+.solana-pay-content {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+
+.solana-pay-content .solana-pay-dashboard {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  max-width: none;
+  min-height: auto;
+}
+
+.solana-pay-content .dashboard-header {
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.solana-pay-content .balance-overview,
+.solana-pay-content .payment-type-selection,
+.solana-pay-content .payment-form-section,
+.solana-pay-content .qr-code-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-6);
+}
+
+/* Override some Solana Pay dashboard styles to match the corporate theme */
+.solana-pay-content .dashboard-title {
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+  background: none;
+  background-clip: unset;
+  -webkit-background-clip: unset;
+}
+
+.solana-pay-content .dashboard-title .material-icons {
+  color: var(--bank-blue);
+  -webkit-text-fill-color: var(--bank-blue);
+}
+
+/* Make QR code section more prominent */
+.solana-pay-content .qr-code-section {
+  background: var(--bg-glass);
+  border: 2px solid var(--bank-blue-border);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Payment type cards integration */
+.solana-pay-content .payment-type-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  transition: var(--transition-normal);
+}
+
+.solana-pay-content .payment-type-card:hover {
+  border-color: var(--bank-blue-border);
+  box-shadow: var(--shadow-md);
+}
+
+.solana-pay-content .payment-type-card.active {
+  background: var(--bg-glass-hover);
+  border-color: var(--bank-blue);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Form styling to match dashboard */
+.solana-pay-content .form-group input,
+.solana-pay-content .form-group select {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  color: var(--text-primary);
+}
+
+.solana-pay-content .form-group input:focus,
+.solana-pay-content .form-group select:focus {
+  border-color: var(--bank-blue);
+  box-shadow: 0 0 0 3px var(--bank-blue-border);
+}
+
+/* Button styling consistency */
+.solana-pay-content .btn-primary {
+  background: var(--bank-blue);
+  border: none;
+}
+
+.solana-pay-content .btn-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.solana-pay-content .btn-secondary {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  color: var(--text-primary);
+}
+
+.solana-pay-content .btn-secondary:hover:not(:disabled) {
+  background: var(--bg-glass-hover);
+  border-color: var(--bank-blue-border);
+}
+
+/* Balance cards styling */
+.solana-pay-content .balance-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+}
+
+.solana-pay-content .balance-card:hover {
+  border-color: var(--bank-blue-border);
+  transform: translateY(-1px);
 }

@@ -395,18 +395,34 @@ export const dashboardService = {
     const activeEmployees = employees.filter(emp => emp.status === 'active').length;
     const privateTransactions = transactions.filter(tx => tx.private).length;
     
-    // Calculate monthly changes (mock calculation for now)
+    // Calculate monthly changes based on actual data
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    
+    const lastMonthEmployees = employees.filter(emp => 
+      new Date(emp.createdAt) <= lastMonth
+    ).length;
+    const lastMonthTransactions = transactions.filter(tx => 
+      new Date(tx.createdAt) <= lastMonth
+    ).length;
+    
     const monthlyChange = {
-      balance: 12.3,
-      employees: 8,
-      transactions: 15.2
+      balance: 0, // Would need balance history to calculate
+      employees: activeEmployees - lastMonthEmployees,
+      transactions: transactions.length - lastMonthTransactions
     };
+
+    // Calculate compliance score based on transaction completion rate
+    const completedTransactions = transactions.filter(tx => tx.status === 'completed').length;
+    const complianceScore = transactions.length > 0 
+      ? Math.round((completedTransactions / transactions.length) * 100)
+      : 100;
 
     return {
       totalBalance: corporation?.stats.totalBalance || 0,
       activeEmployees,
       privateTransactions,
-      complianceScore: 98.7, // Mock for now
+      complianceScore,
       monthlyChange
     };
   },

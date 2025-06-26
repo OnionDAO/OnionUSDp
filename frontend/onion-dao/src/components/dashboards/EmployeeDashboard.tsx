@@ -1,22 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { transactionService, employeeService } from '../../services/firestoreService';
+import type { Transaction } from '../../types';
 import './Dashboard.css';
-
-interface Payment {
-  id: string;
-  fromCompany: string;
-  date: string;
-  status: 'completed' | 'pending' | 'processing';
-  txHash?: string;
-  memo?: string;
-}
 
 type TabType = 'overview' | 'transactions' | 'security';
 
 const EmployeeDashboard: React.FC = () => {
-  const { userProfile, walletInfo, connectWallet, disconnectWallet, signOut } = useAuth();
+  const { userProfile, walletInfo, isWalletConnected, connectWallet, disconnectWallet, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [employeeRecord, setEmployeeRecord] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
 
@@ -26,18 +20,29 @@ const EmployeeDashboard: React.FC = () => {
     { id: 'security', label: 'Security', icon: 'security' }
   ];
 
-  // Load saved payment data from localStorage
+  // Load employee data and transactions from Firebase
   useEffect(() => {
-    const savedPayments = localStorage.getItem('onion_employee_payments');
-    
-    if (savedPayments) {
-      try {
-        setPayments(JSON.parse(savedPayments));
-      } catch (error) {
-        console.error('Error loading payments:', error);
+    const loadEmployeeData = async () => {
+      if (userProfile?.uid && userProfile.userType === 'employee') {
+        try {
+          // Find employee record by email
+          const employees = await employeeService.getEmployeesByCorporation(userProfile.corporationId || '');
+          const employee = employees.find(emp => emp.email === userProfile.email);
+          setEmployeeRecord(employee);
+          
+          // Load transactions for this employee
+          if (employee) {
+            const employeeTransactions = await transactionService.getTransactionsForEmployee(employee.id);
+            setTransactions(employeeTransactions);
+          }
+        } catch (error) {
+          console.error('Error loading employee data from Firebase:', error);
+        }
       }
-    }
-  }, []);
+    };
+    
+    loadEmployeeData();
+  }, [userProfile]);
 
   const handleConnectWallet = async () => {
     setIsLoading(true);
@@ -80,7 +85,7 @@ const EmployeeDashboard: React.FC = () => {
   };
 
   const renderTabContent = () => {
-    if (!walletInfo?.connected) {
+    if (!isWalletConnected) {
       return null;
     }
 
@@ -100,7 +105,7 @@ const EmployeeDashboard: React.FC = () => {
               <div className="card-content">
                 <div className="transaction-row">
                   <span className="tx-label">Wallet Address:</span>
-                  <span className="tx-address">{walletInfo.address}</span>
+                  <span className="tx-address">{walletInfo?.address}</span>
                 </div>
                 <div className="transaction-row">
                   <span className="tx-label">Network:</span>
@@ -109,7 +114,7 @@ const EmployeeDashboard: React.FC = () => {
                 <div className="transaction-row">
                   <span className="tx-label">Last Connected:</span>
                   <span className="tx-value">
-                    {new Date(walletInfo.lastConnected).toLocaleDateString()}
+                    {walletInfo?.lastConnected ? new Date(walletInfo.lastConnected).toLocaleDateString() : 'Unknown'}
                   </span>
                 </div>
               </div>
@@ -160,7 +165,7 @@ const EmployeeDashboard: React.FC = () => {
             {/* Stats Bottom */}
             <div className="stats-bottom">
               <div className="stat-item">
-                <div className="stat-value">{payments.length}</div>
+                <div className="stat-value">{transactions.length}</div>
                 <div className="stat-label">PAYMENTS RECEIVED</div>
               </div>
               <div className="stat-item">
@@ -195,7 +200,7 @@ const EmployeeDashboard: React.FC = () => {
               </div>
             </div>
             
-            {payments.length === 0 ? (
+            {transactions.length === 0 ? (
               <div className="empty-transactions">
                 <div className="empty-icon">
                   <span className="material-icons">payment</span>
@@ -213,31 +218,35 @@ const EmployeeDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="transactions-list">
-                {payments.map((payment) => (
-                  <div key={payment.id} className="transaction-card">
+                {transactions.map((transaction) => (
+                  <div key={transaction.id} className="transaction-card">
                     <div className="transaction-header">
-                      <div className="transaction-type">Payment from {payment.fromCompany}</div>
-                      <div className={`transaction-status ${payment.status}`}>
-                        {payment.status.toUpperCase()}
+                      <div className="transaction-type">
+                        {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)} Payment
+                      </div>
+                      <div className={`transaction-status ${transaction.status}`}>
+                        {transaction.status.toUpperCase()}
                       </div>
                     </div>
                     <div className="transaction-content">
                       <div className="transaction-row">
                         <span className="tx-label">Date:</span>
-                        <span className="tx-value">{formatDate(payment.date)}</span>
+                        <span className="tx-value">{formatDate(transaction.date)}</span>
                       </div>
                       <div className="transaction-row">
                         <span className="tx-label">Type:</span>
-                        <span className="tx-value">{payment.memo || 'Salary Payment'}</span>
+                        <span className="tx-value">{transaction.type} Payment</span>
                       </div>
                       <div className="transaction-row">
                         <span className="tx-label">Amount:</span>
-                        <span className="tx-value private">🔒 Confidential</span>
+                        <span className="tx-value private">
+                          {transaction.private ? '🔒 Confidential' : `$${transaction.amount.toLocaleString()}`}
+                        </span>
                       </div>
-                      {payment.txHash && (
+                      {transaction.signature && (
                         <div className="transaction-row">
                           <span className="tx-label">Transaction:</span>
-                          <span className="tx-address">{payment.txHash}</span>
+                          <span className="tx-address">{transaction.signature}</span>
                         </div>
                       )}
                     </div>
@@ -309,11 +318,15 @@ const EmployeeDashboard: React.FC = () => {
                 <div className="card-content">
                   <div className="transaction-row">
                     <span className="tx-label">Employee Name:</span>
-                    <span className="tx-value">{userProfile?.employeeName || 'Not set'}</span>
+                    <span className="tx-value">{employeeRecord?.name || userProfile?.employeeName || 'Not set'}</span>
                   </div>
                   <div className="transaction-row">
-                    <span className="tx-label">Employee ID:</span>
-                    <span className="tx-value">{userProfile?.uid?.slice(0, 8) || 'Not set'}</span>
+                    <span className="tx-label">Department:</span>
+                    <span className="tx-value">{employeeRecord?.department || 'Not set'}</span>
+                  </div>
+                  <div className="transaction-row">
+                    <span className="tx-label">Employee Status:</span>
+                    <span className="tx-value">{employeeRecord?.status || 'Unknown'}</span>
                   </div>
                   <div className="transaction-row">
                     <span className="tx-label">Account Type:</span>
@@ -356,7 +369,11 @@ const EmployeeDashboard: React.FC = () => {
             <div className="header-badge">
               <span className="badge-text">Employee Banking Portal</span>
             </div>
-            <button className="btn btn-secondary btn-small logout-btn" onClick={handleLogout}>
+            <button 
+              className="btn btn-secondary btn-small logout-btn" 
+              onClick={handleLogout}
+              title="Sign out (wallet will be saved for next login)"
+            >
               <span className="material-icons">logout</span>
               Sign Out
             </button>
@@ -398,7 +415,7 @@ const EmployeeDashboard: React.FC = () => {
         )}
 
         {/* Wallet Connection */}
-        {!walletError && !walletInfo?.connected ? (
+        {!walletError && !isWalletConnected ? (
           <div className="connect-card">
             <div className="card-header">
               <div className="card-title">
@@ -428,31 +445,36 @@ const EmployeeDashboard: React.FC = () => {
               </div>
             </div>
           </div>
-        ) : walletInfo?.connected && (
+        ) : isWalletConnected && (
           <>
             {/* Wallet Connected Info */}
             <div className="connect-card">
               <div className="card-header">
                 <div className="card-title">
                   <span className="material-icons">check_circle</span>
-                  Wallet Connected (Receive Only)
+                  Wallet Connected & Saved
                 </div>
                 <button 
                   className="btn btn-secondary btn-small" 
                   onClick={handleDisconnectWallet}
+                  title="Permanently disconnect and forget this wallet"
                 >
                   <span className="material-icons">link_off</span>
-                  Disconnect
+                  Forget Wallet
                 </button>
               </div>
               <div className="card-content">
                 <div className="transaction-row">
                   <span className="tx-label">Address:</span>
-                  <span className="tx-address">{walletInfo.address}</span>
+                  <span className="tx-address">{walletInfo?.address}</span>
                 </div>
                 <div className="transaction-row">
                   <span className="tx-label">Status:</span>
-                  <span className="tx-value private">📥 Ready to Receive Payments</span>
+                  <span className="tx-value private">📥 Ready to Receive</span>
+                </div>
+                <div className="transaction-row">
+                  <span className="tx-label">Auto-Login:</span>
+                  <span className="tx-value private">✅ Enabled</span>
                 </div>
               </div>
             </div>

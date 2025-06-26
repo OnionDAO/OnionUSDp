@@ -1,0 +1,311 @@
+/* Solana Pay QR Code Component Styles */
+.solana-pay-qr {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* QR Code Container */
+.qr-code-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-6);
+}
+
+.qr-code-wrapper {
+  position: relative;
+  background: white;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+/* Status Overlay */
+.qr-status-overlay {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  z-index: 10;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: var(--font-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: var(--shadow-sm);
+}
+
+.status-icon {
+  font-size: var(--font-sm);
+}
+
+.status-text {
+  font-size: var(--font-xs);
+}
+
+/* Payment Details */
+.payment-details {
+  color: var(--text-primary);
+}
+
+.payment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.payment-title {
+  font-size: var(--font-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.payment-id {
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background: var(--bg-tertiary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+/* Payment Info */
+.payment-info {
+  margin-bottom: var(--space-6);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-tertiary);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  font-size: var(--font-xs);
+}
+
+.info-value {
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: right;
+  max-width: 60%;
+  word-break: break-all;
+}
+
+.info-value.amount {
+  color: var(--bank-green);
+  font-size: var(--font-lg);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.info-value.address {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  color: var(--text-secondary);
+  font-size: var(--font-xs);
+}
+
+.info-value.memo {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.info-value.time {
+  color: var(--bank-orange);
+  font-weight: 700;
+}
+
+/* Payment Actions */
+.payment-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.payment-actions .btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  transition: var(--transition-normal);
+  cursor: pointer;
+  border: none;
+}
+
+.payment-actions .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.payment-actions .btn-primary {
+  background: var(--bank-blue);
+  color: white;
+}
+
+.payment-actions .btn-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.payment-actions .btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-secondary);
+}
+
+.payment-actions .btn-secondary:hover:not(:disabled) {
+  background: var(--bg-glass-hover);
+  border-color: var(--bank-blue-border);
+}
+
+/* Payment Instructions */
+.payment-instructions {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.payment-instructions h4 {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-3) 0;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.payment-instructions ol {
+  margin: 0;
+  padding-left: var(--space-5);
+  color: var(--text-secondary);
+}
+
+.payment-instructions li {
+  font-size: var(--font-sm);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-2);
+}
+
+.payment-instructions li:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .solana-pay-qr {
+    padding: var(--space-4);
+    max-width: 100%;
+  }
+  
+  .qr-code-wrapper {
+    padding: var(--space-3);
+  }
+  
+  .payment-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+  
+  .payment-actions {
+    flex-direction: column;
+  }
+  
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+  
+  .info-value {
+    max-width: 100%;
+    text-align: left;
+  }
+}
+
+/* Animation for status changes */
+.status-badge {
+  animation: statusPulse 2s infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Hover effects */
+.qr-code-wrapper {
+  transition: var(--transition-normal);
+}
+
+.qr-code-wrapper:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Success state */
+.solana-pay-qr.completed .qr-code-wrapper {
+  border: 2px solid var(--bank-green);
+}
+
+.solana-pay-qr.completed .status-badge {
+  animation: none;
+  background-color: var(--bank-green) !important;
+}
+
+/* Expired state */
+.solana-pay-qr.expired .qr-code-wrapper {
+  opacity: 0.6;
+  filter: grayscale(1);
+}
+
+.solana-pay-qr.expired .payment-actions .btn {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Failed state */
+.solana-pay-qr.failed .qr-code-wrapper {
+  border: 2px solid var(--bank-red);
+}
+
+.solana-pay-qr.failed .status-badge {
+  background-color: var(--bank-red) !important;
+} 
