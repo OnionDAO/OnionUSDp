@@ -11,7 +11,9 @@
     "cli:redeem": "tsx src/scripts/cli-redeem.ts",
     "bot:rebalance": "tsx src/scripts/bot-rebalance.ts",
     "test:onionusdp": "tsx src/scripts/test-onionusdp.ts",
-    "test:keypairs": "tsx src/scripts/test-keypairs.ts"
+    "test:keypairs": "tsx src/scripts/test-keypairs.ts",
+    "test:confidential": "tsx src/scripts/test-confidential-integration.ts",
+    "mint:confidential": "tsx src/scripts/mint-confidential.ts"
   },
   "dependencies": {
     "@solana/spl-token": "^0.4.13",
