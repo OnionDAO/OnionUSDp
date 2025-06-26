@@ -223,8 +223,7 @@ const SolanaPayDashboard: React.FC<SolanaPayDashboardProps> = ({
       const payment = await solanaPayService.generateInvoicePayment(
         invoiceForm.amount,
         invoiceForm.description,
-        invoiceForm.token,
-        invoiceForm.clientWallet
+        invoiceForm.token
       );
 
       setCurrentPayment(payment);
@@ -606,14 +605,6 @@ const SolanaPayDashboard: React.FC<SolanaPayDashboardProps> = ({
             {currentPayment && (
               <SolanaPayQR
                 paymentRequest={currentPayment}
-                onPaymentCompleted={(signature) => {
-                  console.log('Payment completed:', signature);
-                  setCurrentPayment(null);
-                }}
-                onPaymentFailed={(error) => {
-                  console.log('Payment failed:', error);
-                  setError(`Payment failed: ${error}`);
-                }}
               />
             )}
             
@@ -621,7 +612,7 @@ const SolanaPayDashboard: React.FC<SolanaPayDashboardProps> = ({
               <div className="bulk-payroll-qrs">
                 <p>Generated {currentBulkPayroll.qrCodes.length} payment QR codes for bulk payroll</p>
                 <div className="qr-grid">
-                  {currentBulkPayroll.employees.map((item, index) => (
+                  {currentBulkPayroll.employees.map((item) => (
                     <div key={item.employee.id} className="bulk-qr-item">
                       <h4>{item.employee.name}</h4>
                       <p>${item.amount.toLocaleString()}</p>

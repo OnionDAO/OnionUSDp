@@ -15,13 +15,6 @@ declare global {
   }
 }
 
-interface CompanyWallet {
-  address: string;
-  balance: string;
-  network: string;
-  isConnected: boolean;
-}
-
 type TabType = 'overview' | 'employees' | 'treasury' | 'transactions' | 'solana-pay';
 
 const CorporationDashboard: React.FC = () => {

@@ -1,4 +1,4 @@
-import React from 'react'
+// HomePage component
 
 const HomePage = () => {
   return (

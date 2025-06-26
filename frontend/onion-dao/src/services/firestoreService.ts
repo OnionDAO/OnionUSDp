@@ -13,9 +13,6 @@ import {
   onSnapshot,
   Timestamp,
   type DocumentData,
-  type QuerySnapshot,
-  type DocumentSnapshot,
-  type WriteBatch,
   writeBatch
 } from 'firebase/firestore';
 import { db } from '../firebase/config';

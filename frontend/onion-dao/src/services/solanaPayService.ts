@@ -1,19 +1,14 @@
 import { 
   encodeURL, 
-  parseURL, 
   validateTransfer
 } from '@solana/pay';
 import { 
   Connection, 
   PublicKey, 
-  Transaction,
-  SystemProgram,
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { 
-  createTransferInstruction,
-  getAssociatedTokenAddress,
-  TOKEN_PROGRAM_ID
+  getAssociatedTokenAddress
 } from '@solana/spl-token';
 import type { Employee } from '../types';
 import { BigNumber } from 'bignumber.js';
@@ -229,8 +224,7 @@ export class SolanaPayService {
   async generateInvoicePayment(
     amount: number,
     description: string,
-    token: 'SOL' | 'USDC' | 'OnionUSD-P' = 'USDC',
-    clientWallet?: string
+    token: 'SOL' | 'USDC' | 'OnionUSD-P' = 'USDC'
   ): Promise<PaymentRequest> {
     if (!this.corporateWallet) {
       throw new Error('Corporate wallet not set');
