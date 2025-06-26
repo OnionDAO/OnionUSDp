@@ -1,19 +1,14 @@
 import { 
   encodeURL, 
-  parseURL, 
   validateTransfer
 } from '@solana/pay';
 import { 
   Connection, 
   PublicKey, 
-  Transaction,
-  SystemProgram,
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { 
-  createTransferInstruction,
-  getAssociatedTokenAddress,
-  TOKEN_PROGRAM_ID
+  getAssociatedTokenAddress
 } from '@solana/spl-token';
 import type { Employee } from '../types';
 import { BigNumber } from 'bignumber.js';
@@ -96,7 +91,17 @@ export class SolanaPayService {
       throw new Error('Corporate wallet not set');
     }
 
-    const recipient = new PublicKey(employee.walletAddress);
+    // Validate employee wallet address
+    if (!employee.walletAddress || !employee.walletAddress.trim()) {
+      throw new Error('Employee wallet address is required for payments');
+    }
+
+    let recipient: PublicKey;
+    try {
+      recipient = new PublicKey(employee.walletAddress);
+    } catch (error) {
+      throw new Error(`Invalid employee wallet address: ${employee.walletAddress}`);
+    }
     const paymentMemo = memo || `Salary payment for ${employee.name}`;
     
     // Create transfer request URL
@@ -219,8 +224,7 @@ export class SolanaPayService {
   async generateInvoicePayment(
     amount: number,
     description: string,
-    token: 'SOL' | 'USDC' | 'OnionUSD-P' = 'USDC',
-    clientWallet?: string
+    token: 'SOL' | 'USDC' | 'OnionUSD-P' = 'USDC'
   ): Promise<PaymentRequest> {
     if (!this.corporateWallet) {
       throw new Error('Corporate wallet not set');
@@ -302,6 +306,12 @@ export class SolanaPayService {
    */
   async getWalletBalance(walletAddress: string, token?: 'SOL' | 'USDC' | 'OnionUSD-P'): Promise<number> {
     try {
+      // Validate wallet address
+      if (!walletAddress || !walletAddress.trim()) {
+        console.error('Empty wallet address provided to getWalletBalance');
+        return 0;
+      }
+
       const publicKey = new PublicKey(walletAddress);
       
       if (!token || token === 'SOL') {

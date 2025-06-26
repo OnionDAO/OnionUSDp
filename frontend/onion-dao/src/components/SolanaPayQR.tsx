@@ -14,8 +14,6 @@ interface SolanaPayQRProps {
 
 const SolanaPayQR: React.FC<SolanaPayQRProps> = ({
   paymentRequest,
-  onPaymentCompleted,
-  onPaymentFailed,
   size = 256,
   showDetails = true,
   className = ''

@@ -15,15 +15,6 @@ declare global {
   }
 }
 
-
-
-interface CompanyWallet {
-  address: string;
-  balance: string;
-  network: string;
-  isConnected: boolean;
-}
-
 type TabType = 'overview' | 'employees' | 'treasury' | 'transactions' | 'solana-pay';
 
 const CorporationDashboard: React.FC = () => {
@@ -32,6 +23,7 @@ const CorporationDashboard: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [walletError, setWalletError] = useState<string | null>(null);
   
   // Form states
@@ -47,41 +39,36 @@ const CorporationDashboard: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: 'dashboard' },
-    { id: 'employees', label: 'Employee Registry', icon: 'people' },
-    { id: 'treasury', label: 'Payroll Treasury', icon: 'account_balance' },
-    { id: 'transactions', label: 'Payment History', icon: 'receipt_long' },
-    { id: 'solana-pay', label: 'Solana Pay', icon: 'qr_code' }
+    { id: 'overview', label: 'Overview', icon: 'dashboard', description: 'Company metrics & quick actions' },
+    { id: 'employees', label: 'Employee Registry', icon: 'people', description: 'Manage registered employees' },
+    { id: 'treasury', label: 'Payroll Treasury', icon: 'account_balance', description: 'Corporate wallet management' },
+    { id: 'transactions', label: 'Payment History', icon: 'receipt_long', description: 'View transaction records' },
+    { id: 'solana-pay', label: 'Solana Pay', icon: 'qr_code', description: 'Generate payment QR codes' }
   ];
 
-  // Load employees from Firebase
+  // Load data from Firebase
   useEffect(() => {
-    const loadEmployees = async () => {
+    const loadData = async () => {
       if (userProfile?.uid && userProfile.userType === 'corporation') {
+        setIsDataLoading(true);
         try {
-          const corporationEmployees = await employeeService.getEmployeesByCorporation(userProfile.uid);
+          // Load employees and transactions in parallel
+          const [corporationEmployees, corporationTransactions] = await Promise.all([
+            employeeService.getEmployeesByCorporation(userProfile.uid),
+            transactionService.getTransactionsByCorporation(userProfile.uid)
+          ]);
+          
           setEmployees(corporationEmployees);
-        } catch (error) {
-          console.error('Error loading employees from Firebase:', error);
-        }
-      }
-    };
-    
-    loadEmployees();
-    
-    // Load transactions from Firebase
-    const loadTransactions = async () => {
-      if (userProfile?.uid && userProfile.userType === 'corporation') {
-        try {
-          const corporationTransactions = await transactionService.getTransactionsByCorporation(userProfile.uid);
           setTransactions(corporationTransactions);
         } catch (error) {
-          console.error('Error loading transactions from Firebase:', error);
+          console.error('Error loading data from Firebase:', error);
+        } finally {
+          setIsDataLoading(false);
         }
       }
     };
     
-    loadTransactions();
+    loadData();
   }, [userProfile]);
 
   const handleConnectWallet = async () => {
@@ -111,13 +98,43 @@ const CorporationDashboard: React.FC = () => {
   };
 
   const addEmployee = async () => {
+    console.log('🚀 Starting employee creation...');
+    console.log('📋 Form data:', employeeFormData);
+    console.log('👤 User profile:', userProfile);
+
     if (!employeeFormData.name || !employeeFormData.email || !employeeFormData.department || !employeeFormData.salary) {
+      console.error('❌ Missing required fields');
       setSubmitError('Please fill in all required fields');
       return;
     }
 
+    // Validate wallet address if provided
+    if (employeeFormData.walletAddress && employeeFormData.walletAddress.trim()) {
+      const walletAddress = employeeFormData.walletAddress.trim();
+      // Basic Solana address validation: should be 32-44 characters, base58 encoded
+      if (walletAddress.length < 32 || walletAddress.length > 44) {
+        console.error('❌ Invalid wallet address length');
+        setSubmitError('Wallet address must be between 32-44 characters. Leave blank if unknown.');
+        return;
+      }
+      // Check for invalid characters (basic validation)
+      if (!/^[1-9A-HJ-NP-Za-km-z]+$/.test(walletAddress)) {
+        console.error('❌ Invalid wallet address format');
+        setSubmitError('Invalid wallet address format. Use a valid Solana address or leave blank.');
+        return;
+      }
+    }
+
     if (!userProfile?.uid) {
-      setSubmitError('User profile not found');
+      console.error('❌ No user profile or UID found');
+      console.log('Current userProfile:', userProfile);
+      setSubmitError('User profile not found. Please log out and log back in.');
+      return;
+    }
+
+    if (userProfile.userType !== 'corporation') {
+      console.error('❌ User is not a corporation');
+      setSubmitError('Only corporations can add employees. Please ensure you are logged in as a corporation.');
       return;
     }
 
@@ -135,11 +152,15 @@ const CorporationDashboard: React.FC = () => {
         status: 'active' as const
       };
 
+      console.log('📤 Sending employee data to Firebase:', employeeData);
       const employeeId = await employeeService.createEmployee(employeeData);
+      console.log('✅ Employee created with ID:', employeeId);
       
       // Reload employees from Firebase
+      console.log('🔄 Reloading employees...');
       const updatedEmployees = await employeeService.getEmployeesByCorporation(userProfile.uid);
       setEmployees(updatedEmployees);
+      console.log('✅ Employees reloaded:', updatedEmployees.length, 'total');
       
       // Reset form
       setEmployeeFormData({
@@ -151,32 +172,137 @@ const CorporationDashboard: React.FC = () => {
       });
       setIsAddEmployeeModalOpen(false);
       
-      console.log('Employee added successfully with ID:', employeeId);
+      console.log('🎉 Employee added successfully with ID:', employeeId);
     } catch (error) {
-      console.error('Error adding employee:', error);
-      setSubmitError('Failed to add employee. Please try again.');
+      console.error('💥 Detailed error adding employee:', error);
+      
+      // More specific error messages
+      let errorMessage = 'Failed to add employee. ';
+      if (error instanceof Error) {
+        if (error.message.includes('permission-denied')) {
+          errorMessage += 'Permission denied. Please check your Firebase configuration.';
+        } else if (error.message.includes('network')) {
+          errorMessage += 'Network error. Please check your internet connection.';
+        } else {
+          errorMessage += `Error: ${error.message}`;
+        }
+      } else {
+        errorMessage += 'Please try again.';
+      }
+      
+      setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
+  const formatDate = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return dateObj.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const calculatePayrollMetrics = () => {
+    const activeEmployees = employees.filter(e => e.status === 'active');
+    const totalSalaries = activeEmployees.reduce((sum, emp) => sum + emp.salary, 0);
+    const avgSalary = activeEmployees.length > 0 ? totalSalaries / activeEmployees.length : 0;
+    
+    return {
+      activeEmployees: activeEmployees.length,
+      totalEmployees: employees.length,
+      totalMonthlyPayroll: totalSalaries,
+      avgSalary,
+      pendingTransactions: transactions.filter(t => t.status === 'pending').length,
+      completedTransactions: transactions.filter(t => t.status === 'completed').length,
+    };
+  };
+
+  const renderWalletConnectCard = () => (
+    <div className="connect-card">
+      <div className="card-content">
+        <div className="card-title">
+          <span className="material-icons">account_balance_wallet</span>
+          Connect Corporate Wallet
+        </div>
+        <p>
+          Connect your Solana wallet to access treasury management, employee payments, 
+          and confidential transaction capabilities. Your wallet will be used for all 
+          corporate payroll operations.
+        </p>
+        
+        {walletError && (
+          <div className="modal-error">
+            <span className="material-icons">error</span>
+            {walletError}
+          </div>
+        )}
+        
+        <div className="connect-actions">
+          <button 
+            className="btn btn-primary btn-large" 
+            onClick={handleConnectWallet}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <div className="spinner"></div>
+                Connecting...
+              </>
+            ) : (
+              <>
+                <span className="material-icons">wallet</span>
+                Connect Phantom Wallet
+              </>
+            )}
+          </button>
+          
+          <button className="btn btn-secondary">
+            <span className="material-icons">help</span>
+            Setup Guide
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderTabContent = () => {
     if (!isWalletConnected) {
-      return null;
+      return renderWalletConnectCard();
     }
+
+    if (isDataLoading) {
+      return (
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Loading dashboard data...</p>
+        </div>
+      );
+    }
+
+    const metrics = calculatePayrollMetrics();
 
     switch (activeTab) {
       case 'overview':
         return (
           <div className="overview-content">
-            {/* Treasury Status */}
+            {/* Enhanced Treasury Status */}
             <div className="treasury-card">
               <div className="card-header">
                 <div className="card-title">
                   <span className="material-icons">account_balance</span>
                   Corporate Treasury
                 </div>
-                <div className="card-status status-active">SECURED</div>
+                <div className="card-status status-secured">SECURED</div>
               </div>
               <div className="card-content">
                 <div className="transaction-row">
@@ -188,54 +314,74 @@ const CorporationDashboard: React.FC = () => {
                   <span className="tx-value">Solana Mainnet</span>
                 </div>
                 <div className="transaction-row">
+                  <span className="tx-label">Security Level:</span>
+                  <span className="tx-value private">🔒 Confidential Transfers Enabled</span>
+                </div>
+                <div className="transaction-row">
                   <span className="tx-label">Last Connected:</span>
                   <span className="tx-value">
-                    {walletInfo?.lastConnected ? new Date(walletInfo.lastConnected).toLocaleDateString() : 'Unknown'}
+                    {walletInfo?.lastConnected ? formatDate(new Date(walletInfo.lastConnected)) : 'Just now'}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Company Metrics */}
+            {/* Enhanced Company Metrics */}
             <div className="metrics-card">
               <div className="card-header">
                 <div className="card-title">
                   <span className="material-icons">analytics</span>
-                  Company Metrics
+                  Payroll Analytics
                 </div>
-                <div className="card-status status-enhanced">OPERATIONAL</div>
+                <div className="card-status status-operational">OPERATIONAL</div>
               </div>
               <div className="card-content">
                 <div className="transaction-row">
                   <span className="tx-label">Active Employees:</span>
-                  <span className="tx-value">{employees.filter(e => e.status === 'active').length}</span>
+                  <span className="tx-value">{metrics.activeEmployees}</span>
                 </div>
                 <div className="transaction-row">
-                  <span className="tx-label">Total Employees:</span>
-                  <span className="tx-value">{employees.length}</span>
+                  <span className="tx-label">Monthly Payroll:</span>
+                  <span className="tx-value">{formatCurrency(metrics.totalMonthlyPayroll)}</span>
+                </div>
+                <div className="transaction-row">
+                  <span className="tx-label">Average Salary:</span>
+                  <span className="tx-value">{formatCurrency(metrics.avgSalary)}</span>
                 </div>
                 <div className="transaction-row">
                   <span className="tx-label">Total Transactions:</span>
                   <span className="tx-value">{transactions.length}</span>
                 </div>
+                <div className="transaction-row">
+                  <span className="tx-label">Pending Payments:</span>
+                  <span className="tx-value pending">{metrics.pendingTransactions}</span>
+                </div>
               </div>
             </div>
 
-            {/* Quick Actions */}
+            {/* Enhanced Quick Actions */}
             <div className="actions-grid">
               <div className="action-card" onClick={() => setActiveTab('employees')}>
                 <div className="action-icon">people</div>
                 <div className="action-content">
                   <h4>Employee Registry</h4>
-                  <p>Manage employee accounts for confidential payroll</p>
+                  <p>Manage employee accounts for confidential payroll processing</p>
                 </div>
               </div>
               
               <div className="action-card" onClick={() => setActiveTab('treasury')}>
                 <div className="action-icon">account_balance</div>
                 <div className="action-content">
-                  <h4>Payroll Treasury</h4>
-                  <p>Manage corporate funds for employee payments</p>
+                  <h4>Treasury Management</h4>
+                  <p>Manage corporate funds and payroll treasury operations</p>
+                </div>
+              </div>
+              
+              <div className="action-card" onClick={() => setActiveTab('solana-pay')}>
+                <div className="action-icon">qr_code</div>
+                <div className="action-content">
+                  <h4>Instant Payments</h4>
+                  <p>Generate QR codes for immediate employee payments</p>
                 </div>
               </div>
               
@@ -243,23 +389,23 @@ const CorporationDashboard: React.FC = () => {
                 <div className="action-icon">receipt_long</div>
                 <div className="action-content">
                   <h4>Payment History</h4>
-                  <p>View confidential payroll transaction records</p>
-                </div>
-              </div>
-              
-              <div className="action-card" onClick={() => setActiveTab('solana-pay')}>
-                <div className="action-icon">qr_code</div>
-                <div className="action-content">
-                  <h4>Solana Pay</h4>
-                  <p>Generate QR codes for instant employee payments</p>
+                  <p>View comprehensive payroll transaction records</p>
                 </div>
               </div>
               
               <div className="action-card">
-                <div className="action-icon">analytics</div>
+                <div className="action-icon">assessment</div>
                 <div className="action-content">
-                  <h4>Payroll Reports</h4>
-                  <p>Generate compliance and audit reports</p>
+                  <h4>Compliance Reports</h4>
+                  <p>Generate payroll reports for audit and compliance</p>
+                </div>
+              </div>
+              
+              <div className="action-card">
+                <div className="action-icon">security</div>
+                <div className="action-content">
+                  <h4>Privacy Settings</h4>
+                  <p>Configure confidential transaction parameters</p>
                 </div>
               </div>
             </div>
@@ -271,13 +417,23 @@ const CorporationDashboard: React.FC = () => {
           <div className="employees-content">
             <div className="section-header">
               <h3>Employee Registry</h3>
-              <button 
-                className="btn btn-primary" 
-                onClick={() => setIsAddEmployeeModalOpen(true)}
-              >
-                <span className="material-icons">add</span>
-                Add Employee
-              </button>
+              <div className="header-actions">
+                <div className="header-stats">
+                  <span className="badge badge-primary">
+                    {metrics.activeEmployees} Active
+                  </span>
+                  <span className="badge badge-secondary">
+                    {metrics.totalEmployees} Total
+                  </span>
+                </div>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={() => setIsAddEmployeeModalOpen(true)}
+                >
+                  <span className="material-icons">add</span>
+                  Add Employee
+                </button>
+              </div>
             </div>
             
             {employees.length === 0 ? (
@@ -286,7 +442,10 @@ const CorporationDashboard: React.FC = () => {
                   <span className="material-icons">people</span>
                 </div>
                 <h3>No Employees Registered</h3>
-                <p>Register employees to begin processing confidential salary payments. Only registered employees can receive payments from this corporate treasury.</p>
+                <p>
+                  Start building your payroll registry by adding employees. Each registered 
+                  employee can receive confidential salary payments through your corporate treasury.
+                </p>
                 <button 
                   className="btn btn-primary btn-large"
                   onClick={() => setIsAddEmployeeModalOpen(true)}
@@ -297,8 +456,8 @@ const CorporationDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="employees-list">
-                {employees.map((employee) => (
-                  <div key={employee.id} className="employee-card">
+                {employees.map((employee, index) => (
+                  <div key={employee.id} className="employee-card" style={{ animationDelay: `${index * 0.1}s` }}>
                     <div className="employee-header">
                       <div className="employee-info">
                         <h4>{employee.name}</h4>
@@ -311,8 +470,12 @@ const CorporationDashboard: React.FC = () => {
                     </div>
                     <div className="employee-content">
                       <div className="transaction-row">
-                        <span className="tx-label">Salary:</span>
-                        <span className="tx-value">${employee.salary.toLocaleString()}</span>
+                        <span className="tx-label">Annual Salary:</span>
+                        <span className="tx-value">{formatCurrency(employee.salary)}</span>
+                      </div>
+                      <div className="transaction-row">
+                        <span className="tx-label">Monthly Payment:</span>
+                        <span className="tx-value">{formatCurrency(employee.salary / 12)}</span>
                       </div>
                       <div className="transaction-row">
                         <span className="tx-label">Wallet Address:</span>
@@ -326,7 +489,7 @@ const CorporationDashboard: React.FC = () => {
                       </div>
                       <div className="transaction-row">
                         <span className="tx-label">Date Added:</span>
-                        <span className="tx-value">{employee.createdAt.toLocaleDateString()}</span>
+                        <span className="tx-value">{formatDate(employee.createdAt)}</span>
                       </div>
                     </div>
                   </div>
@@ -340,7 +503,14 @@ const CorporationDashboard: React.FC = () => {
         return (
           <div className="treasury-content">
             <div className="section-header">
-              <h3>Payroll Treasury</h3>
+              <h3>Corporate Treasury</h3>
+              <div className="header-actions">
+                <span className="badge badge-success">Connected</span>
+                <button className="btn btn-secondary btn-small" onClick={handleDisconnectWallet}>
+                  <span className="material-icons">logout</span>
+                  Disconnect
+                </button>
+              </div>
             </div>
             
             <div className="treasury-overview">
@@ -350,31 +520,46 @@ const CorporationDashboard: React.FC = () => {
                     <span className="material-icons">account_balance_wallet</span>
                     Corporate Wallet
                   </div>
-                  <div className="card-status status-private">CONFIDENTIAL</div>
+                  <div className="card-status status-confidential">CONFIDENTIAL</div>
                 </div>
                 <div className="card-content">
                   <div className="balance-display">
-                    <p>Connected to Solana network with confidential transfer capabilities</p>
+                    <p>
+                      Your corporate wallet is connected and ready for confidential payroll operations. 
+                      All employee payments will be processed through this secure treasury account.
+                    </p>
                   </div>
                   <div className="transaction-row">
-                    <span className="tx-label">Address:</span>
+                    <span className="tx-label">Wallet Address:</span>
                     <span className="tx-address">{walletInfo?.address}</span>
                   </div>
                   <div className="transaction-row">
-                    <span className="tx-label">Status:</span>
-                    <span className="tx-value private">🔒 Ready for Confidential Transactions</span>
+                    <span className="tx-label">Network:</span>
+                    <span className="tx-value">Solana Mainnet</span>
+                  </div>
+                  <div className="transaction-row">
+                    <span className="tx-label">Security Features:</span>
+                    <span className="tx-value private">🔒 Confidential Transfers Enabled</span>
+                  </div>
+                  <div className="transaction-row">
+                    <span className="tx-label">Monthly Payroll:</span>
+                    <span className="tx-value">{formatCurrency(metrics.totalMonthlyPayroll)}</span>
                   </div>
                 </div>
               </div>
               
               <div className="treasury-actions">
-                <button className="btn btn-primary">
-                  <span className="material-icons">add</span>
+                <button className="btn btn-primary btn-large">
+                  <span className="material-icons">add_circle</span>
                   Deposit Funds
                 </button>
                 <button className="btn btn-secondary">
                   <span className="material-icons">send</span>
                   Transfer Funds
+                </button>
+                <button className="btn btn-secondary">
+                  <span className="material-icons">history</span>
+                  Transaction History
                 </button>
                 <button className="btn btn-secondary">
                   <span className="material-icons">assessment</span>
@@ -389,8 +574,16 @@ const CorporationDashboard: React.FC = () => {
         return (
           <div className="transactions-content">
             <div className="section-header">
-              <h3>Employee Payment History</h3>
+              <h3>Payment History</h3>
               <div className="header-actions">
+                <div className="header-stats">
+                  <span className="badge badge-success">
+                    {metrics.completedTransactions} Completed
+                  </span>
+                  <span className="badge badge-warning">
+                    {metrics.pendingTransactions} Pending
+                  </span>
+                </div>
                 <select className="filter-select">
                   <option>All Payments</option>
                   <option>Salary Payments</option>
@@ -410,12 +603,22 @@ const CorporationDashboard: React.FC = () => {
                   <span className="material-icons">receipt_long</span>
                 </div>
                 <h3>No Payment History</h3>
-                <p>Employee payment records will appear here once you begin processing confidential salary payments to registered employees.</p>
+                <p>
+                  Employee payment records will appear here once you begin processing 
+                  confidential salary payments to registered employees.
+                </p>
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => setActiveTab('solana-pay')}
+                >
+                  <span className="material-icons">qr_code</span>
+                  Make First Payment
+                </button>
               </div>
             ) : (
               <div className="transactions-list">
-                {transactions.map((transaction) => (
-                  <div key={transaction.id} className="transaction-card">
+                {transactions.map((transaction, index) => (
+                  <div key={transaction.id} className="transaction-card" style={{ animationDelay: `${index * 0.1}s` }}>
                     <div className="transaction-header">
                       <div className="transaction-type">
                         {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)} Payment
@@ -429,13 +632,17 @@ const CorporationDashboard: React.FC = () => {
                         <span className="tx-label">Recipient:</span>
                         <span className="tx-value">{transaction.recipient}</span>
                       </div>
-                      <div className="transaction-row">
-                        <span className="tx-label">Date:</span>
-                        <span className="tx-value">{transaction.date}</span>
-                      </div>
+                                             <div className="transaction-row">
+                         <span className="tx-label">Amount:</span>
+                         <span className="tx-value">{formatCurrency(transaction.amount || 0)}</span>
+                       </div>
+                       <div className="transaction-row">
+                         <span className="tx-label">Date:</span>
+                         <span className="tx-value">{typeof transaction.date === 'string' ? transaction.date : formatDate(transaction.date)}</span>
+                       </div>
                       {transaction.signature && (
                         <div className="transaction-row">
-                          <span className="tx-label">Transaction:</span>
+                          <span className="tx-label">Transaction ID:</span>
                           <span className="tx-address">{transaction.signature}</span>
                         </div>
                       )}
@@ -454,11 +661,21 @@ const CorporationDashboard: React.FC = () => {
               employees={employees}
               onPaymentCreated={(payment) => {
                 console.log('Payment created:', payment);
-                // Optionally refresh transactions or show success message
+                // Refresh transactions
+                if (userProfile?.uid) {
+                  transactionService.getTransactionsByCorporation(userProfile.uid)
+                    .then(setTransactions)
+                    .catch(console.error);
+                }
               }}
               onBulkPayrollCreated={(payroll) => {
                 console.log('Bulk payroll created:', payroll);
-                // Optionally handle bulk payroll success
+                // Refresh transactions
+                if (userProfile?.uid) {
+                  transactionService.getTransactionsByCorporation(userProfile.uid)
+                    .then(setTransactions)
+                    .catch(console.error);
+                }
               }}
             />
           </div>
@@ -469,239 +686,165 @@ const CorporationDashboard: React.FC = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="dashboard">
-        <div className="dashboard-container">
-          <div className="loading">
-            <div className="spinner"></div>
-            Connecting to corporate banking...
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="dashboard">
       <div className="dashboard-container">
-        {/* Header */}
-        <div className="dashboard-header">
+        {/* Enhanced Header */}
+        <header className="dashboard-header">
           <div className="header-top">
-            <div className="header-badge">
-              <span className="badge-text">Corporate Treasury</span>
+            <div>
+              <div className="header-badge">
+                <span className="badge-text">Corporate Dashboard</span>
+              </div>
+              <h1 className="dashboard-title">
+                Welcome back, {userProfile?.companyName || userProfile?.employeeName || 'Corporation'}
+              </h1>
+              <p className="dashboard-subtitle">
+                Manage your corporate payroll with confidential, secure transactions on Solana
+              </p>
             </div>
             <button 
-              className="btn btn-secondary btn-small logout-btn" 
+              className="logout-btn" 
               onClick={handleLogout}
-              title="Sign out (wallet will be saved for next login)"
+              title="Sign Out"
             >
               <span className="material-icons">logout</span>
               Sign Out
             </button>
           </div>
-          <h1 className="dashboard-title">
-            {userProfile?.companyName || 'Corporate'} Payroll Center
-          </h1>
-          <p className="dashboard-subtitle">
-            Confidential employee payroll management and treasury operations
-          </p>
-        </div>
+        </header>
 
-        {/* Wallet Connection Error */}
-        {walletError && (
-          <div className="error-card">
-            <div className="card-header">
-              <div className="card-title">
-                <span className="material-icons">warning</span>
-                Connection Issue
-              </div>
-            </div>
-            <div className="card-content">
-              <p>{walletError}</p>
-              <div className="error-actions">
-                <button className="btn btn-primary btn-small" onClick={handleConnectWallet}>
-                  <span className="material-icons">refresh</span>
-                  Retry Connection
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Enhanced Navigation */}
+        <nav className="professional-tabs">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id as TabType)}
+              title={tab.description}
+            >
+              <span className="tab-icon material-icons">{tab.icon}</span>
+              <span className="tab-label">{tab.label}</span>
+            </button>
+          ))}
+        </nav>
 
-        {/* Wallet Connection */}
-        {!walletError && !isWalletConnected ? (
-          <div className="connect-card">
-            <div className="card-header">
-              <div className="card-title">
-                <span className="material-icons">account_balance_wallet</span>
-                Connect Corporate Wallet
-              </div>
-            </div>
-            <div className="card-content">
-              <p>Connect your authorized corporate wallet to access treasury operations and manage confidential employee salary payments.</p>
-              <div className="connect-actions">
-                <button className="btn btn-primary btn-large" onClick={handleConnectWallet}>
-                  <span className="material-icons">link</span>
-                  Connect Wallet
-                </button>
-                <button 
-                  className="btn btn-secondary"
-                  onClick={() => window.open('https://phantom.app/', '_blank')}
-                >
-                  <span className="material-icons">download</span>
-                  Get Phantom Wallet
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : isWalletConnected && (
-          <>
-            {/* Wallet Connected Info */}
-            <div className="connect-card">
-              <div className="card-header">
-                <div className="card-title">
-                  <span className="material-icons">check_circle</span>
-                  Wallet Connected & Saved
-                </div>
-                <button 
-                  className="btn btn-secondary btn-small" 
-                  onClick={handleDisconnectWallet}
-                  title="Permanently disconnect and forget this wallet"
-                >
-                  <span className="material-icons">link_off</span>
-                  Forget Wallet
-                </button>
-              </div>
-              <div className="card-content">
-                <div className="transaction-row">
-                  <span className="tx-label">Address:</span>
-                  <span className="tx-address">{walletInfo?.address}</span>
-                </div>
-                <div className="transaction-row">
-                  <span className="tx-label">Status:</span>
-                  <span className="tx-value private">🔒 Saved & Ready</span>
-                </div>
-                <div className="transaction-row">
-                  <span className="tx-label">Auto-Login:</span>
-                  <span className="tx-value private">✅ Enabled</span>
-                </div>
-              </div>
-            </div>
+        {/* Main Content */}
+        <main className="dashboard-content">
+          {renderTabContent()}
+        </main>
 
-            {/* Tab Navigation */}
-            <div className="professional-tabs">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab.id as TabType)}
-                >
-                  <span className="material-icons tab-icon">{tab.icon}</span>
-                  <span className="tab-label">{tab.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Tab Content */}
-            <div className="tab-content-area">
-              {renderTabContent()}
-            </div>
-          </>
-        )}
-
-        {/* Add Employee Modal */}
+        {/* Enhanced Add Employee Modal */}
         {isAddEmployeeModalOpen && (
           <div className="modal-overlay" onClick={() => setIsAddEmployeeModalOpen(false)}>
             <div className="modal" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h3 className="modal-title">Add Employee</h3>
+                <h2 className="modal-title">Add New Employee</h2>
                 <button 
                   className="modal-close"
                   onClick={() => setIsAddEmployeeModalOpen(false)}
+                  disabled={isSubmitting}
                 >
                   <span className="material-icons">close</span>
                 </button>
               </div>
+              
               <div className="modal-body">
+                {submitError && (
+                  <div className="modal-error">
+                    <span className="material-icons">error</span>
+                    {submitError}
+                  </div>
+                )}
+                
                 <div className="form-group">
                   <label className="form-label">Employee Name *</label>
-                  <input 
+                  <input
                     type="text"
                     className="form-input"
+                    placeholder="e.g. John Smith"
                     value={employeeFormData.name}
                     onChange={(e) => setEmployeeFormData({...employeeFormData, name: e.target.value})}
-                    placeholder="Enter full name"
+                    disabled={isSubmitting}
                   />
                 </div>
+                
                 <div className="form-group">
                   <label className="form-label">Email Address *</label>
-                  <input 
+                  <input
                     type="email"
                     className="form-input"
+                    placeholder="john.smith@company.com"
                     value={employeeFormData.email}
                     onChange={(e) => setEmployeeFormData({...employeeFormData, email: e.target.value})}
-                    placeholder="Enter email address"
+                    disabled={isSubmitting}
                   />
                 </div>
+                
                 <div className="form-group">
                   <label className="form-label">Department *</label>
-                  <input 
+                  <input
                     type="text"
                     className="form-input"
+                    placeholder="e.g. Engineering, Sales, Marketing"
                     value={employeeFormData.department}
                     onChange={(e) => setEmployeeFormData({...employeeFormData, department: e.target.value})}
-                    placeholder="Enter department"
+                    disabled={isSubmitting}
                   />
                 </div>
+                
                 <div className="form-group">
                   <label className="form-label">Annual Salary *</label>
-                  <input 
+                  <input
                     type="number"
                     className="form-input"
-                    value={employeeFormData.salary}
+                    placeholder="75000"
+                    value={employeeFormData.salary || ''}
                     onChange={(e) => setEmployeeFormData({...employeeFormData, salary: Number(e.target.value)})}
-                    placeholder="Enter annual salary"
-                    min="0"
+                    disabled={isSubmitting}
                   />
                 </div>
+                
                 <div className="form-group">
-                  <label className="form-label">Wallet Address (Optional)</label>
-                  <input 
+                  <label className="form-label">Solana Wallet Address (Optional)</label>
+                  <input
                     type="text"
                     className="form-input"
+                    placeholder="Leave blank if unknown - can be added later"
                     value={employeeFormData.walletAddress}
                     onChange={(e) => setEmployeeFormData({...employeeFormData, walletAddress: e.target.value})}
-                    placeholder="Solana wallet address (can be added later)"
+                    disabled={isSubmitting}
                   />
+                  <p className="form-help">
+                    Employee can provide this later. Payments require a valid Solana wallet address.
+                  </p>
                 </div>
               </div>
-              {submitError && (
-                <div className="modal-error">
-                  <span className="material-icons">error</span>
-                  {submitError}
-                </div>
-              )}
+              
               <div className="modal-footer">
                 <button 
-                  className="btn btn-secondary" 
-                  onClick={() => {
-                    setIsAddEmployeeModalOpen(false);
-                    setSubmitError(null);
-                  }}
+                  className="btn btn-secondary"
+                  onClick={() => setIsAddEmployeeModalOpen(false)}
                   disabled={isSubmitting}
                 >
                   Cancel
                 </button>
                 <button 
-                  className="btn btn-primary" 
+                  className="btn btn-primary"
                   onClick={addEmployee}
                   disabled={isSubmitting}
                 >
-                  <span className="material-icons">
-                    {isSubmitting ? 'hourglass_empty' : 'add'}
-                  </span>
-                  {isSubmitting ? 'Adding...' : 'Add Employee'}
+                  {isSubmitting ? (
+                    <>
+                      <div className="spinner"></div>
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-icons">add</span>
+                      Add Employee
+                    </>
+                  )}
                 </button>
               </div>
             </div>
