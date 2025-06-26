@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="/src/index.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <title>OnionDAO - Private Corporate Banking</title>
+    <script>
+      // Early Buffer polyfill to prevent "Buffer is not defined" errors
+      window.global = window;
+      if (typeof window.Buffer === 'undefined') {
+        // Simple Buffer polyfill placeholder
+        window.Buffer = {
+          from: function() { return new Uint8Array(); },
+          isBuffer: function() { return false; },
+          alloc: function() { return new Uint8Array(); }
+        };
+      }
+      if (typeof window.process === 'undefined') {
+        window.process = { env: {}, browser: true };
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

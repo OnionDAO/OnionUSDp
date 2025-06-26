@@ -1,0 +1,344 @@
+/* Architecture Section */
+.architecture {
+  padding: 6rem 0;
+  background: #000000;
+  position: relative;
+}
+
+.architecture-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.architecture-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.architecture-title {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.architecture-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: stretch;
+}
+
+.architecture-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 2.5rem;
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.architecture-panel:hover {
+  border-color: rgba(74, 144, 226, 0.3);
+  background: rgba(74, 144, 226, 0.05);
+  transform: translateY(-4px);
+}
+
+.panel-header {
+  margin-bottom: 1.5rem;
+}
+
+.panel-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 0;
+}
+
+.panel-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-description {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+/* Privacy Technology Visualization */
+.tech-visualization {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: auto;
+}
+
+.onion-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #4A90E2, #357ABD);
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(74, 144, 226, 0.3);
+}
+
+.tech-flow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.tech-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.step-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.step-icon.solana {
+  background: linear-gradient(135deg, #9945FF, #14F195);
+  color: white;
+}
+
+.step-icon.metamask {
+  background: linear-gradient(135deg, #F6851B, #E2761B);
+  color: white;
+}
+
+.step-icon.anchor {
+  background: linear-gradient(135deg, #4267B2, #365899);
+  color: white;
+}
+
+.step-icon.raydium {
+  background: linear-gradient(135deg, #C2B2FF, #9C4FFF);
+  color: white;
+}
+
+.step-icon.jupiter {
+  background: linear-gradient(135deg, #FFC837, #FF9500);
+  color: white;
+}
+
+.step-icon.wire {
+  background: linear-gradient(135deg, #00D9FF, #0088CC);
+  color: white;
+}
+
+.step-icon:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+/* Compliance Visualization */
+.compliance-visualization {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: auto;
+}
+
+.compliance-flow {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  position: relative;
+}
+
+.compliance-flow::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  width: 2px;
+  height: 60px;
+  background: linear-gradient(180deg, transparent, #4A90E2, transparent);
+  border-radius: 1px;
+}
+
+.secure-box {
+  background: rgba(74, 144, 226, 0.1);
+  border: 2px solid #4A90E2;
+  border-radius: 12px;
+  padding: 1.5rem;
+  position: relative;
+  min-width: 140px;
+}
+
+.secure-label {
+  color: #4A90E2;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.secure-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.audit-icon {
+  color: #4A90E2;
+}
+
+.compliance-icons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.compliance-step {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.compliance-step:hover {
+  transform: scale(1.1);
+}
+
+.user-box {
+  background: rgba(34, 197, 94, 0.1);
+  border: 2px solid #22c55e;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 100px;
+}
+
+.user-icon {
+  color: #22c55e;
+}
+
+.user-label {
+  color: #22c55e;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .architecture-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .architecture-panel {
+    padding: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .architecture {
+    padding: 4rem 0;
+  }
+  
+  .architecture-container {
+    padding: 0 1rem;
+  }
+  
+  .architecture-title {
+    font-size: 2.5rem;
+  }
+  
+  .architecture-panel {
+    padding: 1.5rem;
+  }
+  
+  .panel-title {
+    font-size: 1.25rem;
+  }
+  
+  .panel-description {
+    font-size: 0.9rem;
+  }
+  
+  .onion-icon {
+    font-size: 3rem;
+    width: 64px;
+    height: 64px;
+  }
+  
+  .tech-flow {
+    gap: 0.75rem;
+  }
+  
+  .step-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .compliance-flow {
+    gap: 2rem;
+  }
+  
+  .secure-box, .user-box {
+    padding: 1rem;
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .architecture-title {
+    font-size: 2rem;
+  }
+  
+  .tech-flow {
+    gap: 0.5rem;
+  }
+  
+  .step-icon {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .compliance-flow {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .compliance-flow::before {
+    width: 60px;
+    height: 2px;
+    transform: translateX(-50%) translateY(-50%) rotate(90deg);
+  }
+} 
