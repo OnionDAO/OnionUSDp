@@ -1,4 +1,45 @@
 {
+  "name": "onion-usd-p",
+  "version": "1.0.0",
+  "description": "Privacy-Preserving Corporate Payroll Platform built on Solana",
+  "private": true,
+  "workspaces": [
+    "frontend/onion-dao",
+    "pUSD"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm install --prefix frontend/onion-dao && npm install --prefix pUSD",
+    "dev:frontend": "npm run dev --prefix frontend/onion-dao",
+    "dev:backend": "npm run dev --prefix pUSD",
+    "build:frontend": "npm run build --prefix frontend/onion-dao",
+    "build:backend": "npm run build --prefix pUSD",
+    "build:all": "npm run build:frontend && npm run build:backend",
+    "lint:frontend": "npm run lint --prefix frontend/onion-dao",
+    "clean": "rm -rf node_modules frontend/onion-dao/node_modules pUSD/node_modules frontend/onion-dao/dist pUSD/dist",
+    "docker:build": "docker build -t onion-usd-p .",
+    "treasury:status": "npm run treasury-status --prefix pUSD",
+    "deploy": "npm run deploy --prefix pUSD"
+  },
+  "keywords": [
+    "solana",
+    "token-2022",
+    "privacy",
+    "payroll",
+    "stablecoin",
+    "defi",
+    "corporate",
+    "treasury"
+  ],
+  "author": "OnionUSD-P Team",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/OnionUSDp.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.10",
     "postcss": "^8.5.6",
