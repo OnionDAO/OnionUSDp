@@ -67,15 +67,19 @@ export const employeeService = {
   async getEmployeesByCorporation(corporationId: string): Promise<Employee[]> {
     const q = query(
       collection(db, COLLECTIONS.EMPLOYEES),
-      where('corporationId', '==', corporationId),
-      orderBy('createdAt', 'desc')
+      where('corporationId', '==', corporationId)
+      // Temporarily removed orderBy to avoid index requirement
+      // orderBy('createdAt', 'desc')
     );
     
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    const employees = snapshot.docs.map(doc => ({
       id: doc.id,
       ...convertTimestamps(doc.data())
     } as Employee));
+    
+    // Sort in JavaScript instead of Firestore
+    return employees.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   },
 
   // Get single employee by ID
@@ -143,38 +147,50 @@ export const transactionService = {
   async getTransactionsByCorporation(corporationId: string, limitCount?: number): Promise<Transaction[]> {
     let q = query(
       collection(db, COLLECTIONS.TRANSACTIONS),
-      where('corporationId', '==', corporationId),
-      orderBy('createdAt', 'desc')
+      where('corporationId', '==', corporationId)
+      // Temporarily removed orderBy to avoid index requirement
+      // orderBy('createdAt', 'desc')
     );
     
-    if (limitCount) {
-      q = query(q, limit(limitCount));
-    }
-    
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    let transactions = snapshot.docs.map(doc => ({
       id: doc.id,
       ...convertTimestamps(doc.data())
     } as Transaction));
+    
+    // Sort in JavaScript and apply limit
+    transactions = transactions.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    
+    if (limitCount) {
+      transactions = transactions.slice(0, limitCount);
+    }
+    
+    return transactions;
   },
 
   // Get transactions for an employee
   async getTransactionsForEmployee(employeeId: string, limitCount?: number): Promise<Transaction[]> {
     let q = query(
       collection(db, COLLECTIONS.TRANSACTIONS),
-      where('recipientId', '==', employeeId),
-      orderBy('createdAt', 'desc')
+      where('recipientId', '==', employeeId)
+      // Temporarily removed orderBy to avoid index requirement
+      // orderBy('createdAt', 'desc')
     );
     
-    if (limitCount) {
-      q = query(q, limit(limitCount));
-    }
-    
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    let transactions = snapshot.docs.map(doc => ({
       id: doc.id,
       ...convertTimestamps(doc.data())
     } as Transaction));
+    
+    // Sort in JavaScript and apply limit
+    transactions = transactions.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    
+    if (limitCount) {
+      transactions = transactions.slice(0, limitCount);
+    }
+    
+    return transactions;
   },
 
   // Create batch payroll transactions
@@ -251,30 +267,38 @@ export const paymentRequestService = {
   async getPaymentRequestsByEmployee(employeeId: string): Promise<PaymentRequest[]> {
     const q = query(
       collection(db, COLLECTIONS.PAYMENT_REQUESTS),
-      where('employeeId', '==', employeeId),
-      orderBy('submittedAt', 'desc')
+      where('employeeId', '==', employeeId)
+      // Temporarily removed orderBy to avoid index requirement
+      // orderBy('submittedAt', 'desc')
     );
     
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    const requests = snapshot.docs.map(doc => ({
       id: doc.id,
       ...convertTimestamps(doc.data())
     } as PaymentRequest));
+    
+    // Sort in JavaScript
+    return requests.sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime());
   },
 
   // Get payment requests by corporation
   async getPaymentRequestsByCorporation(corporationId: string): Promise<PaymentRequest[]> {
     const q = query(
       collection(db, COLLECTIONS.PAYMENT_REQUESTS),
-      where('corporationId', '==', corporationId),
-      orderBy('submittedAt', 'desc')
+      where('corporationId', '==', corporationId)
+      // Temporarily removed orderBy to avoid index requirement
+      // orderBy('submittedAt', 'desc')
     );
     
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    const requests = snapshot.docs.map(doc => ({
       id: doc.id,
       ...convertTimestamps(doc.data())
     } as PaymentRequest));
+    
+    // Sort in JavaScript
+    return requests.sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime());
   },
 
   // Update payment request status
