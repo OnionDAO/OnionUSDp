@@ -72,7 +72,14 @@ export class OnionUSDPManager {
   ) {
     this.client = client;
     this.connection = connection;
-    this.tokenProgram = options.useToken2022 ? TOKEN_2022_PROGRAM_ADDRESS : TOKEN_PROGRAM_ADDRESS;
+    
+    // Convert token program addresses to Address type
+    if (options.useToken2022) {
+      this.tokenProgram = PROGRAM_IDS.TOKEN_2022_PROGRAM.toBase58() as Address;
+    } else {
+      this.tokenProgram = PROGRAM_IDS.TOKEN_PROGRAM.toBase58() as Address;
+    }
+    
     this.programId = new PublicKey(PROGRAM_IDS.ONIONUSDP_PROGRAM);
     
     // Derive PDAs
