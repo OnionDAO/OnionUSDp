@@ -1,7 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const web3_js_1 = require("@solana/web3.js");
-const treasury_1 = require("../lib/treasury");
+import { Connection } from '@solana/web3.js';
+import { TreasuryService } from '../lib/treasury';
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 const argv = yargs(hideBin(process.argv))
@@ -13,8 +11,8 @@ async function main() {
         const endpoint = argv.network === 'mainnet'
             ? 'https://api.mainnet-beta.solana.com'
             : 'https://api.devnet.solana.com';
-        const connection = new web3_js_1.Connection(endpoint, 'confirmed');
-        const treasury = new treasury_1.TreasuryService(connection);
+        const connection = new Connection(endpoint, 'confirmed');
+        const treasury = new TreasuryService(connection);
         await treasury.init();
         console.log('🏛️  Treasury Status Report');
         console.log('========================');

@@ -1,13 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.logger = exports.LogLevel = void 0;
-var LogLevel;
+export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["DEBUG"] = 0] = "DEBUG";
     LogLevel[LogLevel["INFO"] = 1] = "INFO";
     LogLevel[LogLevel["WARN"] = 2] = "WARN";
     LogLevel[LogLevel["ERROR"] = 3] = "ERROR";
-})(LogLevel || (exports.LogLevel = LogLevel = {}));
+})(LogLevel || (LogLevel = {}));
 class Logger {
     constructor() {
         this.level = LogLevel.INFO;
@@ -54,4 +51,5 @@ class Logger {
         }
     }
 }
-exports.logger = new Logger();
+export const logger = new Logger();
+//# sourceMappingURL=logger.js.map

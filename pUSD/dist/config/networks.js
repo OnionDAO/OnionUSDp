@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.MAINNET = exports.DEVNET = void 0;
-exports.DEVNET = {
+export const DEVNET = {
     MINT: '8GzpAzmBLSHsNQhGFwhokEDziXJAQm7C9P7x3YQYqf4x',
     TOKEN_PROGRAM: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
     TOKEN_2022_PROGRAM: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',
@@ -9,8 +6,12 @@ exports.DEVNET = {
     SYSTEM_PROGRAM: '11111111111111111111111111111111',
     RENT: 'SysvarRent111111111111111111111111111111111',
     METADATA_PROGRAM: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+    SOLEND_PROGRAM: 'So1endDq2YkqhipRh3WViPa8hdiSpxWy6z3Z6tMCpAo',
+    KAMINO_PROGRAM: 'KMino1LendKqj8PoCs9nqRPqY5BW6eGh5kHYqKjQqrx',
+    LULO_PROGRAM: 'FL3X2pRs5rDDEoyBqwf4vE8qM5JqkE8KkM8KkM8KkM8K',
+    USDC_MINT: 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr',
 };
-exports.MAINNET = {
+export const MAINNET = {
     MINT: 'So11111111111111111111111111111111111111112', // Example mainnet mint
     TOKEN_PROGRAM: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
     TOKEN_2022_PROGRAM: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',
@@ -18,5 +19,9 @@ exports.MAINNET = {
     SYSTEM_PROGRAM: '11111111111111111111111111111111',
     RENT: 'SysvarRent111111111111111111111111111111111',
     METADATA_PROGRAM: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+    SOLEND_PROGRAM: 'So1endDq2YkqhipRh3WViPa8hdiSpxWy6z3Z6tMCpAo',
+    KAMINO_PROGRAM: 'KMino1LendKqj8PoCs9nqRPqY5BW6eGh5kHYqKjQqrx',
+    LULO_PROGRAM: 'FL3X2pRs5rDDEoyBqwf4vE8qM5JqkE8KkM8KkM8KkM8K',
+    USDC_MINT: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
 };
 //# sourceMappingURL=networks.js.map

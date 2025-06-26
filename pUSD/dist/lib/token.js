@@ -1,15 +1,12 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.GillTokenManager = void 0;
-const gill_1 = require("gill");
-const programs_1 = require("gill/programs");
-const constants_1 = require("../config/constants");
-const logger_1 = require("../utils/logger");
-class GillTokenManager {
+import { airdropFactory, createTransaction, generateKeyPairSigner, getMinimumBalanceForRentExemption, lamports, signTransactionMessageWithSigners } from "gill";
+import { getCreateAccountInstruction, getTokenMetadataAddress, getInitializeMintInstruction, getMintSize, TOKEN_PROGRAM_ADDRESS, TOKEN_2022_PROGRAM_ADDRESS } from "gill/programs";
+import { TOKEN_CONSTANTS } from '../config/constants';
+import { logger } from '../utils/logger';
+export class GillTokenManager {
     constructor(client, connection, useToken2022 = true) {
         this.client = client;
         this.connection = connection;
-        this.tokenProgram = useToken2022 ? programs_1.TOKEN_2022_PROGRAM_ADDRESS : programs_1.TOKEN_PROGRAM_ADDRESS;
+        this.tokenProgram = useToken2022 ? TOKEN_2022_PROGRAM_ADDRESS : TOKEN_PROGRAM_ADDRESS;
     }
     /**
      * Create a new token with metadata using Gill
@@ -18,44 +15,44 @@ class GillTokenManager {
         try {
             const { rpc, rpcSubscriptions, sendAndConfirmTransaction } = this.client;
             // Generate mint keypair
-            const mint = await (0, gill_1.generateKeyPairSigner)();
-            logger_1.logger.info(`Creating token mint: ${mint.address}`);
+            const mint = await generateKeyPairSigner();
+            logger.info(`Creating token mint: ${mint.address}`);
             // Get latest blockhash
             const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
             // Calculate space needed for mint
-            const space = (0, programs_1.getMintSize)();
+            const space = getMintSize();
             // Get metadata address
-            const metadataAddress = await (0, programs_1.getTokenMetadataAddress)(mint);
+            const metadataAddress = await getTokenMetadataAddress(mint);
             // Build transaction instructions - just create the mint for now
             const instructions = [
                 // Create account instruction
-                (0, programs_1.getCreateAccountInstruction)({
+                getCreateAccountInstruction({
                     space,
-                    lamports: (0, gill_1.getMinimumBalanceForRentExemption)(space),
+                    lamports: getMinimumBalanceForRentExemption(space),
                     newAccount: mint,
                     payer,
                     programAddress: this.tokenProgram
                 }),
                 // Initialize mint instruction
-                (0, programs_1.getInitializeMintInstruction)({
+                getInitializeMintInstruction({
                     mint: mint.address,
                     mintAuthority: payer.address,
                     freezeAuthority: payer.address,
-                    decimals: options.decimals || constants_1.TOKEN_CONSTANTS.DECIMALS
+                    decimals: options.decimals || TOKEN_CONSTANTS.DECIMALS
                 }, { programAddress: this.tokenProgram })
             ];
             // Create transaction
-            const transaction = (0, gill_1.createTransaction)({
+            const transaction = createTransaction({
                 feePayer: payer,
                 version: "legacy",
                 instructions,
                 latestBlockhash
             });
             // Sign and send transaction
-            const signedTransaction = await (0, gill_1.signTransactionMessageWithSigners)(transaction);
+            const signedTransaction = await signTransactionMessageWithSigners(transaction);
             const signature = await sendAndConfirmTransaction(signedTransaction);
-            logger_1.logger.info(`Created token: ${mint.address} with signature: ${signature}`);
-            logger_1.logger.info(`Metadata address: ${metadataAddress} (can be added later)`);
+            logger.info(`Created token: ${mint.address} with signature: ${signature}`);
+            logger.info(`Metadata address: ${metadataAddress} (can be added later)`);
             return {
                 mint,
                 metadataAddress,
@@ -63,7 +60,7 @@ class GillTokenManager {
             };
         }
         catch (error) {
-            logger_1.logger.error('Failed to create token:', error);
+            logger.error('Failed to create token:', error);
             throw error;
         }
     }
@@ -74,7 +71,7 @@ class GillTokenManager {
         const options = {
             name: network === 'mainnet-beta' ? 'Privacy USD' : `Privacy USD (${network})`,
             symbol: network === 'mainnet-beta' ? 'pUSD' : `pUSD-${network.toUpperCase()}`,
-            decimals: constants_1.TOKEN_CONSTANTS.DECIMALS,
+            decimals: TOKEN_CONSTANTS.DECIMALS,
             uri: `https://raw.githubusercontent.com/your-repo/pUSD/main/metadata/pusd-${network}.json`,
             isMutable: true,
             useToken2022: true,
@@ -99,12 +96,12 @@ class GillTokenManager {
     ) {
         try {
             const { rpc, rpcSubscriptions } = this.client;
-            await (0, gill_1.airdropFactory)({ rpc, rpcSubscriptions })({
+            await airdropFactory({ rpc, rpcSubscriptions })({
                 commitment: "confirmed",
-                lamports: (0, gill_1.lamports)(amount),
+                lamports: lamports(amount),
                 recipientAddress: recipient.address
             });
-            logger_1.logger.info(`Airdropped ${amount} lamports to ${recipient.address}`);
+            logger.info(`Airdropped ${amount} lamports to ${recipient.address}`);
             return {
                 signature: 'airdrop',
                 success: true,
@@ -112,7 +109,7 @@ class GillTokenManager {
             };
         }
         catch (error) {
-            logger_1.logger.error('Failed to airdrop SOL:', error);
+            logger.error('Failed to airdrop SOL:', error);
             return {
                 signature: '',
                 success: false,
@@ -130,7 +127,7 @@ class GillTokenManager {
             const { value: tokenAccounts } = await rpc.getTokenAccountsByOwner(owner, {
                 mint
             }).send();
-            if (tokenAccounts.length === 0) {
+            if (!tokenAccounts || tokenAccounts.length === 0) {
                 return BigInt(0);
             }
             // Get the first token account balance
@@ -145,7 +142,7 @@ class GillTokenManager {
             return BigInt(0);
         }
         catch (error) {
-            logger_1.logger.error('Failed to get token balance:', error);
+            logger.error('Failed to get token balance:', error);
             return BigInt(0);
         }
     }
@@ -159,10 +156,9 @@ class GillTokenManager {
             return accountInfo;
         }
         catch (error) {
-            logger_1.logger.error('Failed to get mint info:', error);
+            logger.error('Failed to get mint info:', error);
             throw error;
         }
     }
 }
-exports.GillTokenManager = GillTokenManager;
 //# sourceMappingURL=token.js.map

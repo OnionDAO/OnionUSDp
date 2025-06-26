@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.TransactionType = void 0;
-var TransactionType;
+export var TransactionType;
 (function (TransactionType) {
     TransactionType["MINT"] = "mint";
     TransactionType["BURN"] = "burn";
@@ -11,5 +8,5 @@ var TransactionType;
     TransactionType["REVOKE"] = "revoke";
     TransactionType["FREEZE"] = "freeze";
     TransactionType["THAW"] = "thaw";
-})(TransactionType || (exports.TransactionType = TransactionType = {}));
+})(TransactionType || (TransactionType = {}));
 //# sourceMappingURL=transaction.js.map

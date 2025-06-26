@@ -6,6 +6,10 @@ export declare const DEVNET: {
     SYSTEM_PROGRAM: string;
     RENT: string;
     METADATA_PROGRAM: string;
+    SOLEND_PROGRAM: string;
+    KAMINO_PROGRAM: string;
+    LULO_PROGRAM: string;
+    USDC_MINT: string;
 };
 export declare const MAINNET: {
     MINT: string;
@@ -15,5 +19,9 @@ export declare const MAINNET: {
     SYSTEM_PROGRAM: string;
     RENT: string;
     METADATA_PROGRAM: string;
+    SOLEND_PROGRAM: string;
+    KAMINO_PROGRAM: string;
+    LULO_PROGRAM: string;
+    USDC_MINT: string;
 };
 //# sourceMappingURL=networks.d.ts.map

@@ -118,10 +118,12 @@ async function main() {
         process.exit(1);
       }
     } catch (error) {
+      // For demo purposes, simulate successful redemption when no allow entry exists
       logger.warn('Redemption failed (expected if not deployed):', error);
       logger.info('Demo mode: Simulating successful redemption...');
       logger.info('✅ Redemption simulation successful!');
-      logger.info(`📝 Would redeem ${argv.amount} pUSD for ${argv.amount} USDC`);
+      logger.info(`📝 Transaction signature: placeholder`);
+      logger.info(`💰 Would redeem ${argv.amount} pUSD for ${argv.amount} USDC`);
       logger.info(`🔗 Transaction would be sent to: ${argv.network}`);
       logger.info(`👤 Employee wallet: ${walletInfo.publicKey}`);
       logger.info(`📊 Amount: ${argv.amount} pUSD (${amount} lamports)`);

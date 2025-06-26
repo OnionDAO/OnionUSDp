@@ -75,4 +75,68 @@ export interface AppConfig {
     privacy: PrivacyConfig;
     security: SecurityConfig;
 }
+export interface ConfigPDA {
+    floatMinPct: number;
+    floatMaxPct: number;
+    strategyId: number;
+    riskParam: number;
+    delegatedSigner: PublicKey;
+    authority: PublicKey;
+    bump: number;
+}
+export declare enum StrategyType {
+    NONE = 0,// No yield (100% float)
+    SOLEND = 1,// Solend (low risk)
+    KAMINO = 2,// Kamino (medium risk)
+    LULO = 3
+}
+export interface RedeemAllowEntry {
+    wallet: PublicKey;
+    dailyLimit: number;
+    monthlyLimit: number;
+    dailyUsed: number;
+    monthlyUsed: number;
+    lastDailyReset: number;
+    lastMonthlyReset: number;
+    bump: number;
+}
+export interface TreasuryPDA {
+    authority: PublicKey;
+    usdcBalance: bigint;
+    pusdSupply: bigint;
+    bump: number;
+}
+export interface YieldMasterPDA {
+    treasury: PublicKey;
+    strategyId: number;
+    strategyBalance: bigint;
+    strategyAccount: PublicKey;
+    bump: number;
+}
+export interface PayrollEscrowPDA {
+    batch: string;
+    total: bigint;
+    releaseAt: number;
+    frozen: boolean;
+    bump: number;
+}
+export interface StrategyEvent {
+    action: 'invest' | 'withdraw';
+    amount: bigint;
+    strategyId: number;
+    timestamp: number;
+}
+export interface RedeemEvent {
+    wallet: PublicKey;
+    amount: bigint;
+    timestamp: number;
+    signature: string;
+}
+export interface ConfigUpdateEvent {
+    floatMinPct: number;
+    floatMaxPct: number;
+    strategyId: number;
+    riskParam: number;
+    timestamp: number;
+}
 //# sourceMappingURL=config.d.ts.map

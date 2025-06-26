@@ -216,7 +216,7 @@ export class GillTokenManager {
         mint
       }).send();
 
-      if (tokenAccounts.length === 0) {
+      if (!tokenAccounts || tokenAccounts.length === 0) {
         return BigInt(0);
       }
 

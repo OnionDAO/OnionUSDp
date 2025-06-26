@@ -14,8 +14,8 @@ export const DEFAULT_NETWORK = NETWORKS.DEVNET;
 
 // Current pUSD configuration
 export const PUSD_CONFIG = {
-  mint: "8GzpAzmBLSHsNQhGFwhokEDziXJAQm7C9P7x3YQYqf4x",
-  network: "devnet",
+  mint: "4HoKmEMnT6JqZEWc3c1VTW6bXeEGCS2U4SxZ7UYnwZjb",
+  network: "surfnet",
   program: "Token2022"
 } as const;
 
@@ -30,9 +30,9 @@ export const PROGRAM_IDS = {
   SOLEND_PROGRAM: new PublicKey(DEVNET.SOLEND_PROGRAM),
   KAMINO_PROGRAM: new PublicKey(DEVNET.KAMINO_PROGRAM),
   LULO_PROGRAM: new PublicKey(DEVNET.LULO_PROGRAM),
-  USDC_MINT: new PublicKey(DEVNET.USDC_MINT),
-  PUSD_MINT: new PublicKey(PUSD_CONFIG.mint),
-  ONIONUSDP_PROGRAM: new PublicKey('11111111111111111111111111111111'), // Placeholder - will be updated after deployment
+  ONIONUSDP_PROGRAM: '11111111111111111111111111111111', // Placeholder
+  USDC_MINT: '4HoKmEMnT6JqZEWc3c1VTW6bXeEGCS2U4SxZ7UYnwZjb', // Using your token
+  PUSD_MINT: '4HoKmEMnT6JqZEWc3c1VTW6bXeEGCS2U4SxZ7UYnwZjb' // Using your token
 } as const;
 
 // Token constants
