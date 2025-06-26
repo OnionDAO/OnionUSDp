@@ -1,0 +1,39 @@
+/* Typing Animation Styles */
+.typing-text {
+  display: inline-block;
+  position: relative;
+  min-height: 1.2em;
+}
+
+.typing-cursor {
+  color: rgba(255, 255, 255, 0.9);
+  animation: blink 1s infinite;
+  font-weight: 300;
+  margin-left: 2px;
+  display: inline-block;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Title gradient glow effect */
+.title-gradient {
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  transition: all 0.5s ease;
+  animation: subtle-glow 4s ease-in-out infinite alternate;
+}
+
+@keyframes subtle-glow {
+  from {
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  }
+  to {
+    text-shadow: 0 0 25px rgba(255, 255, 255, 0.4), 0 0 35px rgba(255, 255, 255, 0.2);
+  }
+} 
