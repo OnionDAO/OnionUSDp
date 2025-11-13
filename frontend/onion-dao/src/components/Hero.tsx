@@ -16,7 +16,7 @@ const Hero: React.FC = () => {
           </h1>
           
           <p className="hero-description">
-            The first USD-pegged stablecoin with confidential transfers on Solana.<br />
+            The first USD-pegged stablecoin with confidential transfers on Solana.
             Built with Token-2022 extensions for complete payment privacy with regulatory compliance.
           </p>
           

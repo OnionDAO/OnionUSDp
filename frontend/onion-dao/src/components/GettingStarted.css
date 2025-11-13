@@ -1,32 +1,33 @@
 /* Getting Started Section */
 .getting-started {
-  padding: 6rem 0;
-  background: #000000;
+  padding: var(--space-24) 0;
+  background: var(--bg-primary);
   position: relative;
 }
 
 .getting-started-container {
-  max-width: 1200px;
+  max-width: var(--container-xl);
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 var(--space-6);
+  width: 100%;
 }
 
 .getting-started-header {
   text-align: center;
-  margin-bottom: 4rem;
+  margin-bottom: var(--space-16);
 }
 
 .getting-started-title {
-  font-size: 3rem;
+  font-size: var(--font-5xl);
   font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 1rem;
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
   letter-spacing: -0.02em;
 }
 
 .getting-started-subtitle {
-  font-size: 1.125rem;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: var(--font-lg);
+  color: var(--text-secondary);
   max-width: 600px;
   margin: 0 auto;
 }
