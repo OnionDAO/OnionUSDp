@@ -1,0 +1,536 @@
+/* ============================================= */
+/*     COMPREHENSIVE ALIGNMENT & OVERLAP FIXES   */
+/* ============================================= */
+
+/* Fix Navbar Overlap - Add proper spacing */
+.hero {
+  padding-top: calc(var(--space-20) + 60px) !important; /* Account for fixed navbar */
+}
+
+body {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Ensure all containers are properly centered */
+.hero-container,
+.faq-container,
+.architecture-container,
+.features-container,
+.use-cases-container,
+.demo-container,
+.getting-started-container,
+.footer-container,
+.navbar-container {
+  max-width: var(--container-xl) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: var(--space-6) !important;
+  padding-right: var(--space-6) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Fix grid layouts to be centered */
+.hero-container,
+.architecture-content,
+.features-content,
+.use-cases-grid,
+.demo-content,
+.tracks-grid {
+  display: grid !important;
+  place-items: start !important;
+}
+
+/* Fix Hero section specifically */
+.hero-container {
+  grid-template-columns: 1fr 1fr !important;
+  gap: var(--space-16) !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.hero-content {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+  max-width: 600px !important;
+}
+
+/* Fix Hero Title Alignment */
+.hero-title {
+  width: 100% !important;
+  margin-bottom: var(--space-8) !important;
+  position: relative !important;
+}
+
+.title-main {
+  display: block !important;
+  margin-bottom: 0 !important;
+  line-height: 1.1 !important;
+  position: relative !important;
+  padding-bottom: var(--space-6) !important;
+}
+
+.title-main::after {
+  bottom: 0 !important;
+  left: 0 !important;
+}
+
+.title-subtitle {
+  display: block !important;
+  margin-top: var(--space-4) !important;
+  line-height: 1.4 !important;
+}
+
+/* Fix Hero Description */
+.hero-description {
+  width: 100% !important;
+  max-width: 560px !important;
+  margin-bottom: var(--space-10) !important;
+  line-height: 1.7 !important;
+}
+
+/* Fix Hero Actions */
+.hero-actions {
+  width: 100% !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: var(--space-4) !important;
+  align-items: center !important;
+  margin-bottom: var(--space-12) !important;
+}
+
+/* Fix Hero Stats */
+.hero-stats {
+  width: 100% !important;
+  max-width: 600px !important;
+}
+
+/* Fix Hero Visual Side */
+.hero-visual {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.transaction-demo {
+  margin: 0 auto !important;
+  width: 100% !important;
+  max-width: 650px !important;
+}
+
+/* Ensure FAQ list is centered */
+.faq-content {
+  display: flex !important;
+  justify-content: center !important;
+}
+
+.faq-list {
+  width: 100% !important;
+  max-width: 800px !important;
+  margin: 0 auto !important;
+}
+
+/* Architecture panels should be equal */
+.architecture-content {
+  grid-template-columns: 1fr 1fr !important;
+  gap: var(--space-10) !important;
+}
+
+/* Features content proper alignment */
+.features-content {
+  grid-template-columns: 300px 1fr !important;
+  gap: var(--space-8) !important;
+  max-width: 1100px !important;
+  margin: 0 auto !important;
+}
+
+/* Use cases grid centered */
+.use-cases-grid {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+  gap: var(--space-8) !important;
+  justify-content: center !important;
+}
+
+/* Demo content proper grid */
+.demo-content {
+  grid-template-columns: 1fr 1fr !important;
+  gap: var(--space-12) !important;
+  align-items: center !important;
+}
+
+/* Getting Started tracks centered */
+.tracks-grid {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+  gap: var(--space-8) !important;
+  justify-content: center !important;
+}
+
+/* Footer content proper grid */
+.footer-content {
+  grid-template-columns: 1.2fr 2fr !important;
+  gap: var(--space-16) !important;
+  align-items: start !important;
+}
+
+.footer-links {
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: var(--space-8) !important;
+}
+
+/* Fix Demo Cards Alignment */
+.demo-card {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  min-height: 240px !important;
+}
+
+.demo-card .card-header {
+  flex-shrink: 0 !important;
+}
+
+.demo-card .card-content {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+
+.demo-card .transaction-row {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  min-height: 44px !important;
+}
+
+.demo-card .tx-label,
+.demo-card .tx-value,
+.demo-card .tx-address {
+  display: block !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+.demo-card .tx-value {
+  text-align: right !important;
+  flex-shrink: 0 !important;
+}
+
+/* Fix Navbar User Info Overlap */
+.navbar-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: var(--space-4) !important;
+}
+
+.navbar-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--space-3) !important;
+  flex-shrink: 0 !important;
+}
+
+.user-info {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--space-3) !important;
+  white-space: nowrap !important;
+}
+
+.user-name {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  max-width: 150px !important;
+}
+
+/* Prevent text overflow in all cards */
+.card-title,
+.stat-label,
+.tx-label,
+.employee-info h4,
+.transaction-type {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
+}
+
+/* Fix button text wrapping */
+.btn {
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
+}
+
+/* Responsive fixes */
+@media (max-width: 1200px) {
+  .hero {
+    padding-top: calc(var(--space-16) + 60px) !important;
+  }
+  
+  .hero-container {
+    gap: var(--space-12) !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .hero {
+    padding-top: calc(var(--space-16) + 60px) !important;
+  }
+  
+  .hero-container,
+  .architecture-content,
+  .demo-content,
+  .features-content {
+    grid-template-columns: 1fr !important;
+    text-align: center !important;
+  }
+  
+  .hero-content {
+    max-width: 700px !important;
+    margin: 0 auto !important;
+    align-items: center !important;
+  }
+  
+  .hero-actions {
+    justify-content: center !important;
+  }
+  
+  .title-main::after {
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+  
+  .footer-content {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .footer-links {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .transaction-demo {
+    flex-direction: column !important;
+  }
+  
+  .demo-arrow {
+    transform: rotate(90deg) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding-top: calc(var(--space-12) + 56px) !important;
+    padding-bottom: var(--space-12) !important;
+  }
+  
+  .hero-container,
+  .faq-container,
+  .architecture-container,
+  .features-container,
+  .use-cases-container,
+  .demo-container,
+  .getting-started-container,
+  .footer-container {
+    padding-left: var(--space-4) !important;
+    padding-right: var(--space-4) !important;
+  }
+  
+  .hero-stats {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-3) !important;
+  }
+  
+  .hero-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+  
+  .hero-actions .btn {
+    width: 100% !important;
+    max-width: 400px !important;
+  }
+  
+  .title-main {
+    font-size: clamp(1.75rem, 5vw, 2.5rem) !important;
+  }
+  
+  .title-subtitle {
+    font-size: clamp(1rem, 3vw, 1.25rem) !important;
+  }
+  
+  .footer-links,
+  .tracks-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .navbar-actions .btn span {
+    display: inline !important; /* Show button text on tablet */
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding-top: calc(var(--space-10) + 56px) !important;
+  }
+  
+  .hero-container,
+  .faq-container,
+  .architecture-container,
+  .features-container,
+  .use-cases-container,
+  .demo-container,
+  .getting-started-container,
+  .footer-container {
+    padding-left: var(--space-3) !important;
+    padding-right: var(--space-3) !important;
+  }
+  
+  .hero-badge {
+    font-size: 11px !important;
+    padding: var(--space-2) var(--space-4) !important;
+  }
+  
+  .title-main {
+    font-size: clamp(1.5rem, 6vw, 2rem) !important;
+    line-height: 1.2 !important;
+    padding-bottom: var(--space-4) !important;
+  }
+  
+  .title-subtitle {
+    font-size: clamp(0.875rem, 3.5vw, 1.125rem) !important;
+    margin-top: var(--space-3) !important;
+  }
+  
+  .hero-description {
+    font-size: var(--font-base) !important;
+    line-height: 1.6 !important;
+  }
+  
+  .demo-card {
+    padding: var(--space-4) !important;
+    min-height: 200px !important;
+  }
+  
+  .demo-card .transaction-row {
+    padding: var(--space-2) var(--space-3) !important;
+    min-height: 36px !important;
+  }
+  
+  .demo-card .tx-label,
+  .demo-card .tx-value {
+    font-size: 11px !important;
+  }
+  
+  .user-name {
+    max-width: 80px !important;
+    font-size: 11px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding-top: calc(var(--space-8) + 52px) !important;
+    padding-bottom: var(--space-8) !important;
+  }
+  
+  .title-main {
+    font-size: clamp(1.25rem, 7vw, 1.75rem) !important;
+    letter-spacing: -0.02em !important;
+  }
+  
+  .title-subtitle {
+    font-size: clamp(0.75rem, 4vw, 1rem) !important;
+  }
+  
+  .hero-description {
+    font-size: var(--font-sm) !important;
+    margin-bottom: var(--space-6) !important;
+  }
+  
+  .hero-actions {
+    gap: var(--space-3) !important;
+  }
+  
+  .hero-actions .btn {
+    padding: var(--space-4) var(--space-5) !important;
+    font-size: var(--font-base) !important;
+    min-height: 48px !important;
+  }
+  
+  .stat-value {
+    font-size: var(--font-xl) !important;
+  }
+  
+  .stat-label {
+    font-size: 9px !important;
+  }
+  
+  .demo-arrow {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  
+  .navbar-actions .btn {
+    padding: var(--space-2) var(--space-3) !important;
+    font-size: 11px !important;
+  }
+  
+  .user-info {
+    display: none !important; /* Hide on very small screens */
+  }
+}
+
+/* Fix for very small phones */
+@media (max-width: 360px) {
+  .hero {
+    padding-top: calc(var(--space-6) + 48px) !important;
+  }
+  
+  .title-main {
+    font-size: 1.5rem !important;
+  }
+  
+  .title-subtitle {
+    font-size: 0.875rem !important;
+  }
+  
+  .hero-badge {
+    font-size: 10px !important;
+    padding: var(--space-1) var(--space-3) !important;
+  }
+  
+  .demo-card {
+    padding: var(--space-3) !important;
+  }
+  
+  .brand-text {
+    font-size: var(--font-sm) !important;
+  }
+}
+
+/* Prevent any absolute positioning overlap */
+* {
+  position: relative;
+}
+
+.hero::before,
+.hero::after,
+.navbar::before,
+.hero-badge::before,
+.title-main::after,
+.stat::before,
+.demo-card::after,
+.logo-icon::before,
+.nav-link::before,
+.btn-primary::before {
+  position: absolute !important;
+}
+

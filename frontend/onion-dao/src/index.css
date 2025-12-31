@@ -656,3 +656,7 @@ textarea.form-input::placeholder {
   .heading-2 { font-size: var(--font-lg); }
 }
 
+
+/* UI Alignment Fixes from upstream */
+@import './components/alignment-fixes.css';
+@import './components/ui-fixes.css';

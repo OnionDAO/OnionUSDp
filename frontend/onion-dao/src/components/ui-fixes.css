@@ -1,0 +1,552 @@
+/* ================================================================ */
+/*             COMPREHENSIVE UI FIXES - FINAL OVERRIDE             */
+/*  Fixes all text alignment, overlapping, and spacing issues      */
+/* ================================================================ */
+
+/* ========== CRITICAL: PREVENT NAVBAR OVERLAP ========== */
+body {
+  padding-top: 0 !important;
+  margin: 0 !important;
+}
+
+/* Account for fixed navbar in all sections */
+.hero,
+section:first-of-type {
+  padding-top: calc(var(--space-20) + 70px) !important;
+}
+
+/* Navbar height consistency */
+.navbar {
+  height: auto !important;
+  min-height: 60px !important;
+}
+
+.navbar-container {
+  min-height: 60px !important;
+}
+
+/* ========== FIX TEXT ALIGNMENT & LINE-HEIGHT ========== */
+/* Ensure all text elements have proper line-height to prevent overlap */
+h1, h2, h3, h4, h5, h6,
+.hero-title, .title-main, .title-subtitle,
+.faq-title, .architecture-title, .section-title {
+  line-height: 1.2 !important;
+  margin-bottom: var(--space-4) !important;
+  display: block !important;
+  width: 100% !important;
+}
+
+p, .hero-description, .section-description {
+  line-height: 1.7 !important;
+  margin-bottom: var(--space-4) !important;
+  display: block !important;
+  width: 100% !important;
+}
+
+/* Fix inline text elements */
+span, a, button {
+  line-height: inherit !important;
+  vertical-align: baseline !important;
+}
+
+/* ========== FIX HERO SECTION STRUCTURE ========== */
+.hero-container {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: var(--space-16) !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.hero-content {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  width: 100% !important;
+  align-items: flex-start !important;
+}
+
+.hero-content > * {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Fix hero title structure */
+.hero-title {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--space-3) !important;
+  width: 100% !important;
+  margin-bottom: var(--space-6) !important;
+  position: relative !important;
+  padding-bottom: var(--space-8) !important;
+}
+
+.title-main {
+  display: block !important;
+  width: 100% !important;
+  line-height: 1.1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: relative !important;
+}
+
+.title-main::after {
+  position: absolute !important;
+  bottom: calc(-1 * var(--space-5)) !important;
+  left: 0 !important;
+}
+
+.title-subtitle {
+  display: block !important;
+  width: 100% !important;
+  line-height: 1.4 !important;
+  margin: var(--space-3) 0 0 0 !important;
+  padding: 0 !important;
+}
+
+/* Fix hero description */
+.hero-description {
+  margin: var(--space-8) 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: 560px !important;
+}
+
+/* Fix hero actions */
+.hero-actions {
+  margin: var(--space-10) 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: var(--space-4) !important;
+}
+
+/* Fix hero stats */
+.hero-stats {
+  margin: var(--space-10) 0 0 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: 600px !important;
+}
+
+/* ========== FIX CARD LAYOUTS ========== */
+.demo-card,
+.card,
+.stat,
+.faq-item,
+.feature-card {
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+}
+
+.card-header,
+.demo-card .card-header {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: var(--space-3) !important;
+  flex-shrink: 0 !important;
+  width: 100% !important;
+}
+
+.card-title,
+.demo-card .card-title {
+  flex: 1 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.card-content,
+.demo-card .card-content {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--space-3) !important;
+  width: 100% !important;
+}
+
+/* ========== FIX TRANSACTION ROWS ========== */
+.transaction-row,
+.demo-card .transaction-row {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: var(--space-3) !important;
+  width: 100% !important;
+  min-height: 40px !important;
+  padding: var(--space-3) var(--space-4) !important;
+  box-sizing: border-box !important;
+}
+
+.tx-label,
+.demo-card .tx-label {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+}
+
+.tx-value,
+.demo-card .tx-value,
+.tx-address,
+.demo-card .tx-address {
+  flex-shrink: 0 !important;
+  text-align: right !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+  max-width: 60% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* ========== FIX NAVBAR USER INFO ========== */
+.navbar-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: var(--space-3) !important;
+  flex-shrink: 0 !important;
+}
+
+.user-info {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: var(--space-3) !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+.user-name {
+  display: inline-block !important;
+  max-width: 150px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+}
+
+/* ========== FIX BADGE ALIGNMENT ========== */
+.hero-badge,
+.badge,
+.faq-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: var(--space-2) !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  margin-bottom: var(--space-6) !important;
+}
+
+.badge-text {
+  line-height: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ========== FIX BUTTON ALIGNMENT ========== */
+.btn,
+button.btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: var(--space-2) !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.btn svg {
+  flex-shrink: 0 !important;
+}
+
+/* ========== FIX STAT CARDS ========== */
+.stat {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: var(--space-3) !important;
+  text-align: center !important;
+}
+
+.stat-value {
+  display: block !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+.stat-label {
+  display: block !important;
+  line-height: 1.3 !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+/* ========== FIX GRIDS & LAYOUTS ========== */
+.hero-stats,
+.footer-links,
+.tracks-grid,
+.use-cases-grid {
+  display: grid !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* ========== PREVENT ALL TEXT OVERFLOW ========== */
+* {
+  box-sizing: border-box !important;
+}
+
+h1, h2, h3, h4, h5, h6, p, span, div, a, button,
+.card-title, .tx-label, .tx-value, .stat-label, .user-name {
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  hyphens: auto !important;
+}
+
+/* But keep these as nowrap */
+.tx-label, .stat-label, .badge, .btn, .user-name, .nav-link {
+  overflow-wrap: normal !important;
+  word-wrap: normal !important;
+  hyphens: none !important;
+  white-space: nowrap !important;
+}
+
+/* ========== RESPONSIVE ADJUSTMENTS ========== */
+@media (max-width: 1200px) {
+  .hero {
+    padding-top: calc(var(--space-16) + 70px) !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .hero {
+    padding-top: calc(var(--space-16) + 70px) !important;
+  }
+  
+  .hero-container {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-12) !important;
+  }
+  
+  .hero-content {
+    align-items: center !important;
+    text-align: center !important;
+  }
+  
+  .hero-title {
+    align-items: center !important;
+  }
+  
+  .title-main::after {
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+  
+  .hero-actions {
+    justify-content: center !important;
+  }
+  
+  .hero-description {
+    text-align: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  
+  .transaction-demo {
+    flex-direction: column !important;
+  }
+  
+  .demo-arrow {
+    transform: rotate(90deg) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding-top: calc(var(--space-12) + 60px) !important;
+  }
+  
+  .hero-stats {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .hero-actions {
+    flex-direction: column !important;
+  }
+  
+  .hero-actions .btn {
+    width: 100% !important;
+    max-width: 400px !important;
+  }
+  
+  .title-main {
+    font-size: clamp(1.75rem, 6vw, 2.5rem) !important;
+  }
+  
+  .title-subtitle {
+    font-size: clamp(1rem, 4vw, 1.25rem) !important;
+  }
+  
+  .user-name {
+    max-width: 100px !important;
+    font-size: 13px !important;
+  }
+  
+  .navbar-actions .btn span:not(.material-icons) {
+    display: inline !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding-top: calc(var(--space-10) + 60px) !important;
+  }
+  
+  .title-main {
+    font-size: clamp(1.5rem, 7vw, 2rem) !important;
+  }
+  
+  .title-subtitle {
+    font-size: clamp(0.875rem, 4.5vw, 1.125rem) !important;
+  }
+  
+  .hero-badge {
+    font-size: 11px !important;
+  }
+  
+  .demo-card {
+    min-height: 200px !important;
+  }
+  
+  .transaction-row {
+    min-height: 36px !important;
+  }
+  
+  .user-name {
+    max-width: 80px !important;
+    font-size: 11px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding-top: calc(var(--space-8) + 56px) !important;
+  }
+  
+  .title-main {
+    font-size: clamp(1.25rem, 8vw, 1.75rem) !important;
+  }
+  
+  .title-subtitle {
+    font-size: clamp(0.75rem, 5vw, 1rem) !important;
+  }
+  
+  .hero-actions .btn {
+    font-size: var(--font-base) !important;
+  }
+  
+  .user-info {
+    display: none !important;
+  }
+  
+  .navbar-actions .btn {
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .hero {
+    padding-top: calc(var(--space-6) + 52px) !important;
+  }
+  
+  .title-main {
+    font-size: 1.5rem !important;
+  }
+  
+  .title-subtitle {
+    font-size: 0.875rem !important;
+  }
+  
+  .hero-badge {
+    font-size: 10px !important;
+  }
+  
+  .brand-text {
+    font-size: var(--font-sm) !important;
+  }
+}
+
+/* ========== FORCE Z-INDEX HIERARCHY ========== */
+.navbar {
+  z-index: var(--z-fixed) !important;
+  position: fixed !important;
+}
+
+.hero {
+  z-index: 1 !important;
+  position: relative !important;
+}
+
+.hero::before,
+.hero::after {
+  z-index: 0 !important;
+}
+
+.hero-container {
+  z-index: 2 !important;
+  position: relative !important;
+}
+
+/* ========== FIX ABSOLUTE POSITIONED ELEMENTS ========== */
+.hero::before,
+.hero::after,
+.navbar::before,
+.hero-badge::before,
+.title-main::after,
+.stat::before,
+.demo-card::after,
+.logo-icon::before,
+.nav-link::before,
+.btn-primary::before,
+.btn-secondary::before {
+  position: absolute !important;
+  pointer-events: none !important;
+}
+
+/* ========== ENSURE PROPER SPACING BETWEEN SECTIONS ========== */
+section {
+  padding-top: var(--space-20) !important;
+  padding-bottom: var(--space-20) !important;
+  position: relative !important;
+  clear: both !important;
+}
+
+section:first-of-type {
+  padding-top: calc(var(--space-20) + 70px) !important;
+}
+
+/* ========== FINAL CLEARFIX ========== */
+.hero-container::after,
+.navbar-container::after,
+.card::after {
+  content: '' !important;
+  display: table !important;
+  clear: both !important;
+}
+
