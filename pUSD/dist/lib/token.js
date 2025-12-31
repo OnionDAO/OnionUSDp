@@ -127,7 +127,7 @@ export class GillTokenManager {
             const { value: tokenAccounts } = await rpc.getTokenAccountsByOwner(owner, {
                 mint
             }).send();
-            if (tokenAccounts.length === 0) {
+            if (!tokenAccounts || tokenAccounts.length === 0) {
                 return BigInt(0);
             }
             // Get the first token account balance

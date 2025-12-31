@@ -1,0 +1,81 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json.backup
+
+# Production builds
+dist/
+build/
+*.tgz
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Solana
+target/
+.anchor/
+.solana/
+test-ledger/
+
+# Keypairs (security)
+*.json.backup
+*-keypair.json.backup
+
+# Cache
+.cache/
+.parcel-cache/
+
+# Build artifacts
+*.map
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/ 

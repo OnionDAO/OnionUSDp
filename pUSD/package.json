@@ -6,7 +6,15 @@
     "start": "node dist/index.js",
     "deploy": "tsx src/scripts/deploy-with-funding.ts",
     "test-mint": "tsx src/scripts/mint-tokens.ts",
-    "add-metadata": "tsx src/scripts/add-metadata.ts"
+    "add-metadata": "tsx src/scripts/add-metadata.ts",
+    "cli:deposit": "tsx src/scripts/cli-deposit.ts",
+    "cli:redeem": "tsx src/scripts/cli-redeem.ts",
+    "bot:rebalance": "tsx src/scripts/bot-rebalance.ts",
+    "test:onionusdp": "tsx src/scripts/test-onionusdp.ts",
+    "test:keypairs": "tsx src/scripts/test-keypairs.ts",
+    "test:confidential": "tsx src/scripts/test-confidential-integration.ts",
+    "mint:confidential": "tsx src/scripts/mint-confidential.ts",
+    "fund:keypairs": "tsx src/scripts/fund-keypairs.ts"
   },
   "dependencies": {
     "@solana/spl-token": "^0.4.13",

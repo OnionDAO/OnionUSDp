@@ -1,6 +1,6 @@
 {
-    "name": "pUSDC",
-    "symbol": "pUSDC",
+    "name": "USDp",
+    "symbol": "USDp",
     "image": "https://i.imgur.com/TzrMzXF.png",
     "description": "Pegged to USDC"
   }
