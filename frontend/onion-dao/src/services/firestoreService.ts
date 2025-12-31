@@ -169,7 +169,7 @@ export const transactionService = {
 
   // Get transactions by corporation ID
   async getTransactionsByCorporation(corporationId: string, limitCount?: number): Promise<Transaction[]> {
-    let q = query(
+    const q = query(
       collection(db, COLLECTIONS.TRANSACTIONS),
       where('corporationId', '==', corporationId)
       // Temporarily removed orderBy to avoid index requirement
@@ -194,7 +194,7 @@ export const transactionService = {
 
   // Get transactions for an employee
   async getTransactionsForEmployee(employeeId: string, limitCount?: number): Promise<Transaction[]> {
-    let q = query(
+    const q = query(
       collection(db, COLLECTIONS.TRANSACTIONS),
       where('recipientId', '==', employeeId)
       // Temporarily removed orderBy to avoid index requirement
