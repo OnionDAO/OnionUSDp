@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import './components/alignment-fixes.css';
+@import './components/ui-fixes.css';
 
 :root {
   /* Consistent Color Palette */
@@ -655,8 +657,3 @@ textarea.form-input::placeholder {
   .heading-1 { font-size: var(--font-xl); }
   .heading-2 { font-size: var(--font-lg); }
 }
-
-
-/* UI Alignment Fixes from upstream */
-@import './components/alignment-fixes.css';
-@import './components/ui-fixes.css';
