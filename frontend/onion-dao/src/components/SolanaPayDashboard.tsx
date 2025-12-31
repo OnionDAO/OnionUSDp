@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { solanaPayService, type PaymentRequest, type BulkPayrollRequest } from '../services/solanaPayService';
+import { solanaPayService, type PaymentRequest, type BulkPayrollRequest, getNetworkInfo } from '../services/solanaPayService';
+import { transactionService } from '../services/firestoreService';
 import type { Employee } from '../types';
 import SolanaPayQR from './SolanaPayQR';
 import './SolanaPayDashboard.css';
@@ -19,12 +20,18 @@ const SolanaPayDashboard: React.FC<SolanaPayDashboardProps> = ({
   onPaymentCreated,
   onBulkPayrollCreated
 }) => {
-  const { walletInfo } = useAuth();
+  const { walletInfo, userProfile } = useAuth();
   const [activePaymentType, setActivePaymentType] = useState<PaymentType>('employee');
   const [currentPayment, setCurrentPayment] = useState<PaymentRequest | null>(null);
   const [currentBulkPayroll, setCurrentBulkPayroll] = useState<BulkPayrollRequest | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simulationStatus, setSimulationStatus] = useState<'idle' | 'processing' | 'confirming' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Get network info
+  const networkInfo = getNetworkInfo();
 
   // Employee Payment Form
   const [employeeForm, setEmployeeForm] = useState({
@@ -92,6 +99,71 @@ const SolanaPayDashboard: React.FC<SolanaPayDashboardProps> = ({
       console.error('Error loading balances:', error);
     }
   };
+
+  // Generate demo transaction ID
+  const generateDemoTransactionId = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = 'DEMO-';
+    for (let i = 0; i < 32; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
+  // Simulate payment execution (for demo purposes)
+  const simulatePayment = useCallback(async (payment: PaymentRequest, employee?: Employee) => {
+    if (!userProfile) return;
+
+    setIsSimulating(true);
+    setSimulationStatus('processing');
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      // Simulate network delay for processing
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setSimulationStatus('confirming');
+
+      // Simulate confirmation delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Generate demo signature
+      const demoSignature = generateDemoTransactionId();
+
+      // Save transaction to Firebase
+      await transactionService.addTransaction({
+        corporationId: userProfile.corporationId || userProfile.uid,
+        employeeId: employee?.id || 'vendor',
+        amount: payment.amount,
+        type: activePaymentType === 'bulk-payroll' ? 'salary' :
+              activePaymentType === 'employee' ? 'salary' :
+              activePaymentType === 'vendor' ? 'expense' : 'income',
+        status: 'completed',
+        date: new Date().toISOString(),
+        signature: demoSignature,
+        private: true,
+        simulated: true // Mark as demo transaction
+      });
+
+      setSimulationStatus('success');
+      setSuccessMessage(`Payment simulated successfully! Demo TX: ${demoSignature.slice(0, 20)}...`);
+
+      // Clear the current payment after a delay
+      setTimeout(() => {
+        setCurrentPayment(null);
+        setSimulationStatus('idle');
+        setSuccessMessage(null);
+        loadBalances(); // Refresh balances
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error simulating payment:', error);
+      setSimulationStatus('error');
+      setError('Failed to simulate payment. Please try again.');
+    } finally {
+      setIsSimulating(false);
+    }
+  }, [userProfile, activePaymentType]);
 
   // Generate employee payment
   const generateEmployeePayment = async () => {
@@ -283,12 +355,24 @@ const SolanaPayDashboard: React.FC<SolanaPayDashboardProps> = ({
     <div className="solana-pay-dashboard">
       {/* Header */}
       <div className="dashboard-header">
-        <h2 className="dashboard-title">
-          <span className="material-icons">payment</span>
-          Solana Pay Integration
-        </h2>
+        <div className="header-row">
+          <h2 className="dashboard-title">
+            <span className="material-icons">payment</span>
+            Solana Pay Integration
+          </h2>
+          <div className="header-badges">
+            <span className={`network-badge ${networkInfo.isDevnet ? 'devnet' : 'mainnet'}`}>
+              {networkInfo.isDevnet ? 'Devnet' : 'Mainnet'}
+            </span>
+            <span className="demo-badge">
+              <span className="material-icons">science</span>
+              Demo Mode
+            </span>
+          </div>
+        </div>
         <p className="dashboard-subtitle">
-          Generate QR codes for instant payments using Solana Pay protocol
+          Generate QR codes for instant payments using Solana Pay protocol.
+          <span className="demo-notice"> Payments are simulated in demo mode - no real funds are transferred.</span>
         </p>
       </div>
 
@@ -598,16 +682,82 @@ const SolanaPayDashboard: React.FC<SolanaPayDashboardProps> = ({
           )}
         </div>
 
+        {/* Success Message */}
+        {successMessage && (
+          <div className="success-message">
+            <span className="material-icons">check_circle</span>
+            {successMessage}
+          </div>
+        )}
+
         {/* QR Code Display */}
         {(currentPayment || currentBulkPayroll) && (
           <div className="qr-code-section">
             <h3>Payment QR Code</h3>
             {currentPayment && (
-              <SolanaPayQR
-                paymentRequest={currentPayment}
-              />
+              <>
+                <SolanaPayQR
+                  paymentRequest={currentPayment}
+                />
+
+                {/* Simulation Controls */}
+                <div className="simulation-controls">
+                  <div className="simulation-header">
+                    <span className="material-icons">science</span>
+                    <span>Demo Mode - Simulate Payment</span>
+                  </div>
+
+                  {simulationStatus === 'idle' && (
+                    <button
+                      className="btn btn-primary btn-large simulate-btn"
+                      onClick={() => {
+                        const employee = employees.find(e => e.id === employeeForm.employeeId);
+                        simulatePayment(currentPayment, employee);
+                      }}
+                      disabled={isSimulating}
+                    >
+                      <span className="material-icons">play_arrow</span>
+                      Simulate Payment Execution
+                    </button>
+                  )}
+
+                  {simulationStatus === 'processing' && (
+                    <div className="simulation-progress">
+                      <div className="spinner"></div>
+                      <span>Processing transaction...</span>
+                    </div>
+                  )}
+
+                  {simulationStatus === 'confirming' && (
+                    <div className="simulation-progress">
+                      <div className="spinner"></div>
+                      <span>Confirming on blockchain...</span>
+                    </div>
+                  )}
+
+                  {simulationStatus === 'success' && (
+                    <div className="simulation-success">
+                      <span className="material-icons">check_circle</span>
+                      <span>Payment completed successfully!</span>
+                    </div>
+                  )}
+
+                  {simulationStatus === 'error' && (
+                    <div className="simulation-error">
+                      <span className="material-icons">error</span>
+                      <span>Payment failed. Please try again.</span>
+                    </div>
+                  )}
+
+                  <p className="simulation-note">
+                    <span className="material-icons">info</span>
+                    This simulates a payment without transferring real funds.
+                    Transaction will be recorded to your history with a DEMO signature.
+                  </p>
+                </div>
+              </>
             )}
-            
+
             {currentBulkPayroll && (
               <div className="bulk-payroll-qrs">
                 <p>Generated {currentBulkPayroll.qrCodes.length} payment QR codes for bulk payroll</p>
@@ -616,13 +766,32 @@ const SolanaPayDashboard: React.FC<SolanaPayDashboardProps> = ({
                     <div key={item.employee.id} className="bulk-qr-item">
                       <h4>{item.employee.name}</h4>
                       <p>${item.amount.toLocaleString()}</p>
-                      {/* You would render individual QR codes here */}
                       <div className="qr-placeholder">
                         QR Code for {item.employee.name}
                       </div>
                     </div>
                   ))}
                 </div>
+                <button
+                  className="btn btn-primary btn-large simulate-btn"
+                  onClick={() => {
+                    // Simulate all payments in bulk
+                    currentBulkPayroll.employees.forEach((item, index) => {
+                      setTimeout(() => {
+                        simulatePayment({
+                          ...currentPayment!,
+                          amount: item.amount,
+                          recipient: item.employee.walletAddress,
+                          memo: `Bulk payroll: ${item.employee.name}`
+                        }, item.employee);
+                      }, index * 500);
+                    });
+                  }}
+                  disabled={isSimulating}
+                >
+                  <span className="material-icons">play_arrow</span>
+                  Simulate All Payments
+                </button>
               </div>
             )}
           </div>

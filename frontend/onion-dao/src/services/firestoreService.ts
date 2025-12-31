@@ -135,14 +135,41 @@ export const transactionService = {
       createdAt: now,
       updatedAt: now
     };
-    
+
+    const docRef = await addDoc(collection(db, COLLECTIONS.TRANSACTIONS), transaction);
+    return docRef.id;
+  },
+
+  // Add transaction (simplified interface for Solana Pay integration)
+  async addTransaction(data: {
+    corporationId: string;
+    employeeId?: string;
+    amount: number;
+    type: Transaction['type'];
+    status: Transaction['status'];
+    date: string;
+    signature?: string;
+    private?: boolean;
+    simulated?: boolean;
+  }): Promise<string> {
+    const now = new Date();
+    const transaction = {
+      ...data,
+      recipient: data.employeeId || 'external',
+      recipientId: data.employeeId,
+      private: data.private ?? true,
+      simulated: data.simulated ?? false,
+      createdAt: now,
+      updatedAt: now
+    };
+
     const docRef = await addDoc(collection(db, COLLECTIONS.TRANSACTIONS), transaction);
     return docRef.id;
   },
 
   // Get transactions by corporation ID
   async getTransactionsByCorporation(corporationId: string, limitCount?: number): Promise<Transaction[]> {
-    let q = query(
+    const q = query(
       collection(db, COLLECTIONS.TRANSACTIONS),
       where('corporationId', '==', corporationId)
       // Temporarily removed orderBy to avoid index requirement
@@ -167,7 +194,7 @@ export const transactionService = {
 
   // Get transactions for an employee
   async getTransactionsForEmployee(employeeId: string, limitCount?: number): Promise<Transaction[]> {
-    let q = query(
+    const q = query(
       collection(db, COLLECTIONS.TRANSACTIONS),
       where('recipientId', '==', employeeId)
       // Temporarily removed orderBy to avoid index requirement

@@ -1,51 +1,50 @@
-# Multi-stage build for OnionUSD-P
-FROM node:18-alpine AS base
+# OnionUSD-P Frontend Dockerfile
+# Multi-stage build for optimized production image
+
+# Stage 1: Build
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files for dependency installation
+COPY frontend/onion-dao/package*.json ./
 
 # Install dependencies
-WORKDIR /app
-COPY package*.json ./
-COPY frontend/onion-dao/package*.json ./frontend/onion-dao/
-COPY pUSD/package*.json ./pUSD/
 RUN npm ci
 
 # Copy source code
-COPY . .
+COPY frontend/onion-dao/ .
 
-# Build frontend
-FROM base AS frontend-build
-WORKDIR /app/frontend/onion-dao
+# Build arguments for environment variables (passed at build time)
+ARG VITE_FIREBASE_API_KEY
+ARG VITE_FIREBASE_AUTH_DOMAIN
+ARG VITE_FIREBASE_PROJECT_ID
+ARG VITE_FIREBASE_STORAGE_BUCKET
+ARG VITE_FIREBASE_MESSAGING_SENDER_ID
+ARG VITE_FIREBASE_APP_ID
+ARG VITE_SOLANA_NETWORK=devnet
+ARG VITE_SOLANA_RPC_URL=https://api.devnet.solana.com
+
+# Build the application
 RUN npm run build
 
-# Build backend
-FROM base AS backend-build
-WORKDIR /app/pUSD
-RUN npm run build
+# Stage 2: Production
+FROM node:20-alpine AS production
 
-# Production image
-FROM node:18-alpine AS production
-
-# Install production dependencies
 WORKDIR /app
-COPY package*.json ./
-COPY frontend/onion-dao/package*.json ./frontend/onion-dao/
-COPY pUSD/package*.json ./pUSD/
-RUN npm ci --only=production
 
-# Copy built applications
-COPY --from=frontend-build /app/frontend/onion-dao/dist ./frontend/onion-dao/dist
-COPY --from=backend-build /app/pUSD/dist ./pUSD/dist
-COPY --from=backend-build /app/pUSD/src ./pUSD/src
+# Install serve for static file hosting
+RUN npm install -g serve
 
-# Copy configuration files
-COPY postcss.config.mjs ./
-COPY keypairs/ ./keypairs/
+# Copy built assets from builder stage
+COPY --from=builder /app/dist ./dist
 
-# Expose port for frontend
-EXPOSE 5173 8080
+# Expose port
+EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:5173 || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
-# Start the application
-CMD ["npm", "run", "dev:frontend"]
+# Run the application
+CMD ["serve", "-s", "dist", "-l", "3000"]

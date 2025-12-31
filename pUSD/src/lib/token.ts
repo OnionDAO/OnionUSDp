@@ -1,28 +1,23 @@
 import {
   airdropFactory,
-  createSolanaClient,
   createTransaction,
   generateKeyPairSigner,
-  getExplorerLink,
   getMinimumBalanceForRentExemption,
-  getSignatureFromTransaction,
   lamports,
   signTransactionMessageWithSigners,
   type SolanaClient,
   type KeyPairSigner,
-  type TransactionSigner,
   type Address
 } from "gill";
 import {
   getCreateAccountInstruction,
-  getCreateMetadataAccountV3Instruction,
   getTokenMetadataAddress,
   getInitializeMintInstruction,
   getMintSize,
-  TOKEN_PROGRAM_ADDRESS,    
+  TOKEN_PROGRAM_ADDRESS,
   TOKEN_2022_PROGRAM_ADDRESS
 } from "gill/programs";
-import { Connection, PublicKey, Keypair } from '@solana/web3.js';
+import { Connection } from '@solana/web3.js';
 import { TOKEN_CONSTANTS } from '../config/constants';
 import { TransactionResult } from '../types/transaction';
 import { logger } from '../utils/logger';
@@ -53,7 +48,7 @@ export interface TokenInfo {
 
 export class GillTokenManager {
   private client: SolanaClient;
-  private connection: Connection;
+  private connectionInstance: Connection;
   private tokenProgram: Address;
 
   constructor(
@@ -62,8 +57,13 @@ export class GillTokenManager {
     useToken2022: boolean = true
   ) {
     this.client = client;
-    this.connection = connection;
+    this.connectionInstance = connection;
     this.tokenProgram = useToken2022 ? TOKEN_2022_PROGRAM_ADDRESS : TOKEN_PROGRAM_ADDRESS;
+  }
+
+  /** Get the Solana connection instance */
+  get connection(): Connection {
+    return this.connectionInstance;
   }
 
   /**
@@ -74,7 +74,7 @@ export class GillTokenManager {
     options: TokenCreationOptions
   ): Promise<TokenInfo> {
     try {
-      const { rpc, rpcSubscriptions, sendAndConfirmTransaction } = this.client;
+      const { rpc, sendAndConfirmTransaction } = this.client;
       
       // Generate mint keypair
       const mint = await generateKeyPairSigner();
@@ -176,9 +176,9 @@ export class GillTokenManager {
     amount: bigint = 100_000_000n // 0.1 SOL
   ): Promise<TransactionResult> {
     try {
-      const { rpc, rpcSubscriptions } = this.client;
-      
-      await airdropFactory({ rpc, rpcSubscriptions })({
+      const { rpc, rpcSubscriptions: subscriptions } = this.client;
+
+      await airdropFactory({ rpc, rpcSubscriptions: subscriptions })({
         commitment: "confirmed",
         lamports: lamports(amount),
         recipientAddress: recipient.address
@@ -227,8 +227,8 @@ export class GillTokenManager {
       }
       
       // Parse the account data - Gill returns base58 encoded data
-      const accountData = accountInfo.account.data;
       // For now, return 0 as we need to properly decode the token account data
+      // The data is available at accountInfo.account.data for future parsing
       // This would require additional parsing logic for the token account structure
       return BigInt(0);
     } catch (error) {

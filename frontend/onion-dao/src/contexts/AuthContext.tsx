@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { type User, onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
@@ -187,22 +187,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await clearStoredWallet();
           }
         } else {
-          // No wallet response but we have stored info, just restore the stored wallet
-          console.log('No wallet response, but restoring stored wallet info');
+          // No wallet response - wallet is NOT connected, but we have stored address
+          console.log('No wallet response - wallet needs manual reconnection');
+          // Set wallet info but mark as NOT connected so UI shows reconnect prompt
           setWalletInfo({
             ...storedWallet,
-            connected: true,
-            lastConnected: Date.now()
+            connected: false, // Important: wallet is NOT actually connected
+            lastConnected: storedWallet.lastConnected // Keep original timestamp
           });
         }
       } catch (error) {
-        console.log('Auto-reconnect failed silently, restoring stored wallet info');
-        // Even if silent connection fails, we can still restore the wallet info
-        // The user might need to approve transactions, but they won't need to reconnect
+        console.log('Auto-reconnect failed - wallet needs manual reconnection');
+        // Silent connection failed - wallet is NOT connected
+        // Restore wallet info but mark as disconnected so user knows to reconnect
         setWalletInfo({
           ...storedWallet,
-          connected: true,
-          lastConnected: Date.now()
+          connected: false, // Important: wallet is NOT actually connected
+          lastConnected: storedWallet.lastConnected
         });
       }
     }
@@ -292,20 +293,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } else {
         console.warn('No user profile document found for UID:', user.uid);
-        console.log('Creating default employee profile for user');
-        
-        const defaultProfile: UserProfile = {
-          uid: user.uid,
-          email: user.email!,
-          userType: 'employee',
-          employeeName: user.email?.split('@')[0] || 'User',
-          corporationId: 'default-corp'
-        };
-        
-        console.log('Saving default profile:', defaultProfile);
-        await setDoc(docRef, defaultProfile);
-        setUserProfile(defaultProfile);
-        console.log('Default profile created successfully');
+        console.log('User needs to complete registration - no profile exists');
+
+        // Don't create a profile automatically - user should register properly
+        // This handles edge cases where Firebase Auth exists but profile doesn't
+        // The user will need to sign up again with proper details
+        setUserProfile(null);
+
+        // Sign them out so they can register properly
+        console.log('Signing out user without profile - please register');
+        await firebaseSignOut(auth);
       }
     } catch (error) {
       console.error('Error fetching/creating user profile:', error);
@@ -380,7 +377,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [walletInfo]);
 
-  const value = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     currentUser,
     userProfile,
     walletInfo,
@@ -392,7 +390,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     connectWallet,
     disconnectWallet,
     getStoredWallet
-  };
+  }), [currentUser, userProfile, walletInfo, loading]);
 
   return (
     <AuthContext.Provider value={value}>

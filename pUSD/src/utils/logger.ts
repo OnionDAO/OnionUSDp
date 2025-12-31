@@ -20,7 +20,7 @@ class Logger {
       }
       if (typeof arg === 'object') {
         try {
-          return JSON.stringify(arg, (key, value) => 
+          return JSON.stringify(arg, (_key, value) =>
             typeof value === 'bigint' ? value.toString() : value
           , 2);
         } catch {

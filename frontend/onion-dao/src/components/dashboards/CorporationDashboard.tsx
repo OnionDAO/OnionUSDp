@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { employeeService, transactionService } from '../../services/firestoreService';
 import type { Employee, Transaction } from '../../types';
 import SolanaPayDashboard from '../SolanaPayDashboard';
+import { getNetworkInfo } from '../../services/solanaPayService';
 import './Dashboard.css';
 
 // Solana wallet type declarations
@@ -28,6 +29,11 @@ const CorporationDashboard: React.FC = () => {
   
   // Form states
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [isComplianceModalOpen, setIsComplianceModalOpen] = useState(false);
+  const [transactionFilter, setTransactionFilter] = useState('all');
   const [employeeFormData, setEmployeeFormData] = useState({
     name: '',
     email: '',
@@ -37,6 +43,9 @@ const CorporationDashboard: React.FC = () => {
   });
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Get network info for display
+  const networkInfo = getNetworkInfo();
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: 'dashboard', description: 'Company metrics & quick actions' },
@@ -216,7 +225,7 @@ const CorporationDashboard: React.FC = () => {
     const activeEmployees = employees.filter(e => e.status === 'active');
     const totalSalaries = activeEmployees.reduce((sum, emp) => sum + emp.salary, 0);
     const avgSalary = activeEmployees.length > 0 ? totalSalaries / activeEmployees.length : 0;
-    
+
     return {
       activeEmployees: activeEmployees.length,
       totalEmployees: employees.length,
@@ -225,6 +234,73 @@ const CorporationDashboard: React.FC = () => {
       pendingTransactions: transactions.filter(t => t.status === 'pending').length,
       completedTransactions: transactions.filter(t => t.status === 'completed').length,
     };
+  };
+
+  // Filter transactions based on selected filter
+  const getFilteredTransactions = useCallback(() => {
+    switch (transactionFilter) {
+      case 'salary':
+        return transactions.filter(t => t.type === 'salary');
+      case 'bonus':
+        return transactions.filter(t => t.type === 'bonus');
+      case 'pending':
+        return transactions.filter(t => t.status === 'pending');
+      default:
+        return transactions;
+    }
+  }, [transactions, transactionFilter]);
+
+  // Export transactions to CSV
+  const handleExportTransactions = useCallback(() => {
+    const filteredTxs = getFilteredTransactions();
+    if (filteredTxs.length === 0) {
+      alert('No transactions to export');
+      return;
+    }
+
+    const headers = ['Date', 'Type', 'Recipient', 'Amount', 'Status', 'Transaction ID'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredTxs.map(tx => [
+        typeof tx.date === 'string' ? tx.date : formatDate(tx.date),
+        tx.type,
+        tx.recipient,
+        tx.amount || 0,
+        tx.status,
+        tx.signature || 'N/A'
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  }, [getFilteredTransactions]);
+
+  // Handle deposit button click
+  const handleDepositClick = () => {
+    setIsDepositModalOpen(true);
+  };
+
+  // Handle generate report click
+  const handleGenerateReport = () => {
+    setIsReportModalOpen(true);
+  };
+
+  // Handle compliance reports click
+  const handleComplianceClick = () => {
+    setIsComplianceModalOpen(true);
+  };
+
+  // Handle privacy settings click
+  const handlePrivacyClick = () => {
+    setIsPrivacyModalOpen(true);
+  };
+
+  // Open setup guide (external link or modal)
+  const handleSetupGuide = () => {
+    window.open('https://phantom.app/download', '_blank');
   };
 
   const renderWalletConnectCard = () => (
@@ -266,7 +342,7 @@ const CorporationDashboard: React.FC = () => {
             )}
           </button>
           
-          <button className="btn btn-secondary">
+          <button className="btn btn-secondary" onClick={handleSetupGuide}>
             <span className="material-icons">help</span>
             Setup Guide
           </button>
@@ -311,7 +387,10 @@ const CorporationDashboard: React.FC = () => {
                 </div>
                 <div className="transaction-row">
                   <span className="tx-label">Network:</span>
-                  <span className="tx-value">Solana Mainnet</span>
+                  <span className="tx-value">
+                    Solana {networkInfo.isDevnet ? 'Devnet' : 'Mainnet'}
+                    {networkInfo.isDevnet && <span className="badge badge-warning" style={{marginLeft: '8px', fontSize: '10px'}}>DEMO</span>}
+                  </span>
                 </div>
                 <div className="transaction-row">
                   <span className="tx-label">Security Level:</span>
@@ -393,15 +472,15 @@ const CorporationDashboard: React.FC = () => {
                 </div>
               </div>
               
-              <div className="action-card">
+              <div className="action-card" onClick={handleComplianceClick}>
                 <div className="action-icon">assessment</div>
                 <div className="action-content">
                   <h4>Compliance Reports</h4>
                   <p>Generate payroll reports for audit and compliance</p>
                 </div>
               </div>
-              
-              <div className="action-card">
+
+              <div className="action-card" onClick={handlePrivacyClick}>
                 <div className="action-icon">security</div>
                 <div className="action-content">
                   <h4>Privacy Settings</h4>
@@ -535,7 +614,10 @@ const CorporationDashboard: React.FC = () => {
                   </div>
                   <div className="transaction-row">
                     <span className="tx-label">Network:</span>
-                    <span className="tx-value">Solana Mainnet</span>
+                    <span className="tx-value">
+                      Solana {networkInfo.isDevnet ? 'Devnet' : 'Mainnet'}
+                      {networkInfo.isDevnet && <span className="badge badge-warning" style={{marginLeft: '8px', fontSize: '10px'}}>DEMO</span>}
+                    </span>
                   </div>
                   <div className="transaction-row">
                     <span className="tx-label">Security Features:</span>
@@ -549,19 +631,19 @@ const CorporationDashboard: React.FC = () => {
               </div>
               
               <div className="treasury-actions">
-                <button className="btn btn-primary btn-large">
+                <button className="btn btn-primary btn-large" onClick={handleDepositClick}>
                   <span className="material-icons">add_circle</span>
                   Deposit Funds
                 </button>
-                <button className="btn btn-secondary">
+                <button className="btn btn-secondary" onClick={() => setActiveTab('solana-pay')}>
                   <span className="material-icons">send</span>
                   Transfer Funds
                 </button>
-                <button className="btn btn-secondary">
+                <button className="btn btn-secondary" onClick={() => setActiveTab('transactions')}>
                   <span className="material-icons">history</span>
                   Transaction History
                 </button>
-                <button className="btn btn-secondary">
+                <button className="btn btn-secondary" onClick={handleGenerateReport}>
                   <span className="material-icons">assessment</span>
                   Generate Report
                 </button>
@@ -584,40 +666,47 @@ const CorporationDashboard: React.FC = () => {
                     {metrics.pendingTransactions} Pending
                   </span>
                 </div>
-                <select className="filter-select">
-                  <option>All Payments</option>
-                  <option>Salary Payments</option>
-                  <option>Bonus Payments</option>
-                  <option>Pending Payments</option>
+                <select
+                  className="filter-select"
+                  value={transactionFilter}
+                  onChange={(e) => setTransactionFilter(e.target.value)}
+                >
+                  <option value="all">All Payments</option>
+                  <option value="salary">Salary Payments</option>
+                  <option value="bonus">Bonus Payments</option>
+                  <option value="pending">Pending Payments</option>
                 </select>
-                <button className="btn btn-secondary btn-small">
+                <button className="btn btn-secondary btn-small" onClick={handleExportTransactions}>
                   <span className="material-icons">download</span>
                   Export
                 </button>
               </div>
             </div>
             
-            {transactions.length === 0 ? (
+            {getFilteredTransactions().length === 0 ? (
               <div className="empty-transactions">
                 <div className="empty-icon">
                   <span className="material-icons">receipt_long</span>
                 </div>
-                <h3>No Payment History</h3>
+                <h3>{transactions.length === 0 ? 'No Payment History' : 'No Matching Payments'}</h3>
                 <p>
-                  Employee payment records will appear here once you begin processing 
-                  confidential salary payments to registered employees.
+                  {transactions.length === 0
+                    ? 'Employee payment records will appear here once you begin processing confidential salary payments to registered employees.'
+                    : 'No payments match your current filter. Try adjusting the filter criteria.'}
                 </p>
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => setActiveTab('solana-pay')}
-                >
-                  <span className="material-icons">qr_code</span>
-                  Make First Payment
-                </button>
+                {transactions.length === 0 && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setActiveTab('solana-pay')}
+                  >
+                    <span className="material-icons">qr_code</span>
+                    Make First Payment
+                  </button>
+                )}
               </div>
             ) : (
               <div className="transactions-list">
-                {transactions.map((transaction, index) => (
+                {getFilteredTransactions().map((transaction, index) => (
                   <div key={transaction.id} className="transaction-card" style={{ animationDelay: `${index * 0.1}s` }}>
                     <div className="transaction-header">
                       <div className="transaction-type">
@@ -845,6 +934,193 @@ const CorporationDashboard: React.FC = () => {
                       Add Employee
                     </>
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Deposit Modal */}
+        {isDepositModalOpen && (
+          <div className="modal-overlay" onClick={() => setIsDepositModalOpen(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2 className="modal-title">Deposit Funds</h2>
+                <button className="modal-close" onClick={() => setIsDepositModalOpen(false)}>
+                  <span className="material-icons">close</span>
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="info-card">
+                  <span className="material-icons">info</span>
+                  <p>
+                    To deposit funds to your corporate treasury, send SOL or USDC to your connected wallet address.
+                    Your wallet is ready to receive funds for payroll operations.
+                  </p>
+                </div>
+                <div className="transaction-row" style={{marginTop: '16px'}}>
+                  <span className="tx-label">Your Wallet:</span>
+                  <span className="tx-address">{walletInfo?.publicKey}</span>
+                </div>
+                <div className="transaction-row">
+                  <span className="tx-label">Network:</span>
+                  <span className="tx-value">Solana {networkInfo.isDevnet ? 'Devnet' : 'Mainnet'}</span>
+                </div>
+                {networkInfo.isDevnet && (
+                  <div className="info-card" style={{marginTop: '16px', background: 'rgba(245, 158, 11, 0.1)'}}>
+                    <span className="material-icons" style={{color: '#f59e0b'}}>science</span>
+                    <p>
+                      You're on Devnet. Get free test SOL from the{' '}
+                      <a href="https://faucet.solana.com" target="_blank" rel="noopener noreferrer" style={{color: '#4A90E2'}}>
+                        Solana Faucet
+                      </a>
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setIsDepositModalOpen(false)}>
+                  Close
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    navigator.clipboard.writeText(walletInfo?.publicKey || '');
+                    alert('Wallet address copied to clipboard!');
+                  }}
+                >
+                  <span className="material-icons">content_copy</span>
+                  Copy Address
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Generate Report Modal */}
+        {isReportModalOpen && (
+          <div className="modal-overlay" onClick={() => setIsReportModalOpen(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2 className="modal-title">Generate Report</h2>
+                <button className="modal-close" onClick={() => setIsReportModalOpen(false)}>
+                  <span className="material-icons">close</span>
+                </button>
+              </div>
+              <div className="modal-body">
+                <h4>Payroll Summary</h4>
+                <div className="transaction-row">
+                  <span className="tx-label">Total Employees:</span>
+                  <span className="tx-value">{employees.length}</span>
+                </div>
+                <div className="transaction-row">
+                  <span className="tx-label">Active Employees:</span>
+                  <span className="tx-value">{employees.filter(e => e.status === 'active').length}</span>
+                </div>
+                <div className="transaction-row">
+                  <span className="tx-label">Monthly Payroll:</span>
+                  <span className="tx-value">{formatCurrency(calculatePayrollMetrics().totalMonthlyPayroll)}</span>
+                </div>
+                <div className="transaction-row">
+                  <span className="tx-label">Total Transactions:</span>
+                  <span className="tx-value">{transactions.length}</span>
+                </div>
+                <div className="transaction-row">
+                  <span className="tx-label">Report Date:</span>
+                  <span className="tx-value">{formatDate(new Date())}</span>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setIsReportModalOpen(false)}>
+                  Close
+                </button>
+                <button className="btn btn-primary" onClick={handleExportTransactions}>
+                  <span className="material-icons">download</span>
+                  Export CSV
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Compliance Modal */}
+        {isComplianceModalOpen && (
+          <div className="modal-overlay" onClick={() => setIsComplianceModalOpen(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2 className="modal-title">Compliance Reports</h2>
+                <button className="modal-close" onClick={() => setIsComplianceModalOpen(false)}>
+                  <span className="material-icons">close</span>
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="info-card">
+                  <span className="material-icons">verified</span>
+                  <p>All payroll transactions are recorded on the Solana blockchain for complete transparency and auditability.</p>
+                </div>
+                <h4 style={{marginTop: '16px'}}>Compliance Status</h4>
+                <div className="transaction-row">
+                  <span className="tx-label">Blockchain Records:</span>
+                  <span className="tx-value private">✓ Verified</span>
+                </div>
+                <div className="transaction-row">
+                  <span className="tx-label">Privacy Compliance:</span>
+                  <span className="tx-value private">✓ Confidential Transfers</span>
+                </div>
+                <div className="transaction-row">
+                  <span className="tx-label">Audit Trail:</span>
+                  <span className="tx-value private">✓ Complete</span>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setIsComplianceModalOpen(false)}>
+                  Close
+                </button>
+                <button className="btn btn-primary" onClick={handleExportTransactions}>
+                  <span className="material-icons">download</span>
+                  Export Audit Log
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Privacy Settings Modal */}
+        {isPrivacyModalOpen && (
+          <div className="modal-overlay" onClick={() => setIsPrivacyModalOpen(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2 className="modal-title">Privacy Settings</h2>
+                <button className="modal-close" onClick={() => setIsPrivacyModalOpen(false)}>
+                  <span className="material-icons">close</span>
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="info-card">
+                  <span className="material-icons">security</span>
+                  <p>OnionUSD-P uses Solana's Token-2022 confidential transfer extension to hide payment amounts on-chain.</p>
+                </div>
+                <h4 style={{marginTop: '16px'}}>Privacy Features</h4>
+                <div className="transaction-row">
+                  <span className="tx-label">Confidential Transfers:</span>
+                  <span className="tx-value private">✓ Enabled</span>
+                </div>
+                <div className="transaction-row">
+                  <span className="tx-label">Amount Privacy:</span>
+                  <span className="tx-value private">✓ Hidden on-chain</span>
+                </div>
+                <div className="transaction-row">
+                  <span className="tx-label">Recipient Privacy:</span>
+                  <span className="tx-value">Public (standard addresses)</span>
+                </div>
+                <div className="transaction-row">
+                  <span className="tx-label">Transaction Verification:</span>
+                  <span className="tx-value private">✓ Zero-knowledge proofs</span>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-primary" onClick={() => setIsPrivacyModalOpen(false)}>
+                  Done
                 </button>
               </div>
             </div>

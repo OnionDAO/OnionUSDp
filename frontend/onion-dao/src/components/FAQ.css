@@ -9,7 +9,6 @@
   max-width: var(--container-md);
   margin: 0 auto;
   padding: 0 var(--space-6);
-  width: 100%;
 }
 
 .faq-header {

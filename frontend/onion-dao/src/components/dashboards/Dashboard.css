@@ -1284,3 +1284,188 @@
   -webkit-font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
 }
+
+/* Modal Content (separate from .modal) */
+.modal-content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-2xl);
+  width: 90%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+  animation: scaleUp 0.3s ease-out;
+}
+
+.modal-content .modal-header h2 {
+  font-size: var(--font-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Two-Factor Authentication Modal */
+.two-fa-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.two-fa-option {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  transition: var(--transition-normal);
+}
+
+.two-fa-option:hover {
+  border-color: var(--border-secondary);
+  background: var(--bg-glass-hover);
+}
+
+.two-fa-option .option-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-blue-light);
+  border: 1px solid var(--primary-blue-border);
+  border-radius: var(--radius-lg);
+}
+
+.two-fa-option .option-icon .material-icons {
+  font-size: 24px;
+  color: var(--primary-blue);
+}
+
+.two-fa-option .option-content {
+  flex: 1;
+}
+
+.two-fa-option .option-content h4 {
+  font-size: var(--font-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.two-fa-option .option-content p {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-3) 0;
+  line-height: var(--leading-relaxed);
+}
+
+/* Security Feature Cards */
+.security-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.security-feature-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  transition: var(--transition-spring);
+}
+
+.security-feature-card:hover {
+  border-color: var(--border-secondary);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.security-feature-card .card-content p {
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-4);
+}
+
+.security-feature-card .card-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Status Badges */
+.status-inactive {
+  background: var(--bg-glass);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-primary);
+}
+
+/* Stats Bottom Section */
+.stats-bottom {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--border-primary);
+}
+
+.stat-item {
+  text-align: center;
+  padding: var(--space-5);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  transition: var(--transition-normal);
+}
+
+.stat-item:hover {
+  border-color: var(--border-secondary);
+  background: var(--bg-glass-hover);
+}
+
+.stat-value {
+  font-size: var(--font-2xl);
+  font-weight: 700;
+  color: var(--primary-blue);
+  margin-bottom: var(--space-2);
+}
+
+.stat-label {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Badge styles */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-warning {
+  background: var(--warning-light);
+  color: var(--warning-orange);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-success {
+  background: var(--success-light);
+  color: var(--success-green);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.badge-info {
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
+  border: 1px solid var(--primary-blue-border);
+}

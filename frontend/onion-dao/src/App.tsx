@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ToastProvider } from './components/shared'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './components/auth/LoginPage'
 import CorporationDashboard from './components/dashboards/CorporationDashboard'
@@ -45,8 +46,14 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="App">
-          <Routes>
+        <ToastProvider>
+          <div className="App">
+            {/* Skip to main content link for accessibility */}
+            <a href="#main-content" className="skip-link">
+              Skip to main content
+            </a>
+            <main id="main-content">
+            <Routes>
             {/* Public routes */}
             <Route path="/" element={<LandingPageComponent />} />
             <Route path="/login" element={<LoginPage />} />
@@ -81,8 +88,10 @@ function App() {
             
             {/* Redirect unknown routes to landing page */}
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </div>
+            </Routes>
+            </main>
+          </div>
+        </ToastProvider>
       </AuthProvider>
     </Router>
   )

@@ -42,17 +42,19 @@ export interface Employee {
 // Transaction Types
 export interface Transaction {
   id: string;
-  type: 'payroll' | 'payment' | 'compliance' | 'salary' | 'bonus' | 'reimbursement';
+  type: 'payroll' | 'payment' | 'compliance' | 'salary' | 'bonus' | 'reimbursement' | 'expense' | 'income';
   amount: number;
   recipient: string;
   recipientId?: string;
   sender?: string;
   senderId?: string;
   corporationId: string;
+  employeeId?: string;
   date: string;
   status: 'completed' | 'pending' | 'failed' | 'processing';
   private: boolean;
   signature?: string;
+  simulated?: boolean; // Indicates demo/simulated transactions
   metadata?: {
     batchId?: string;
     employeeCount?: number;

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { transactionService, employeeService } from '../../services/firestoreService';
-import type { Transaction } from '../../types';
+import type { Transaction, Employee } from '../../types';
+import { getNetworkInfo } from '../../services/solanaPayService';
 import './Dashboard.css';
 
 type TabType = 'overview' | 'transactions' | 'security';
@@ -10,9 +11,15 @@ const EmployeeDashboard: React.FC = () => {
   const { userProfile, walletInfo, isWalletConnected, connectWallet, disconnectWallet, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [employeeRecord, setEmployeeRecord] = useState<any>(null);
+  const [employeeRecord, setEmployeeRecord] = useState<Employee | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [transactionFilter, setTransactionFilter] = useState('all');
+  const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
+
+  // Get network info for display
+  const networkInfo = getNetworkInfo();
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: 'dashboard' },
@@ -28,7 +35,7 @@ const EmployeeDashboard: React.FC = () => {
           // Find employee record by email
           const employees = await employeeService.getEmployeesByCorporation(userProfile.corporationId || '');
           const employee = employees.find(emp => emp.email === userProfile.email);
-          setEmployeeRecord(employee);
+          setEmployeeRecord(employee || null);
           
           // Load transactions for this employee
           if (employee) {
@@ -84,6 +91,63 @@ const EmployeeDashboard: React.FC = () => {
     });
   };
 
+  // Filter and search transactions
+  const getFilteredTransactions = useCallback(() => {
+    let filtered = transactions;
+
+    // Apply type filter
+    switch (transactionFilter) {
+      case 'salary':
+        filtered = filtered.filter(t => t.type === 'salary');
+        break;
+      case 'bonus':
+        filtered = filtered.filter(t => t.type === 'bonus');
+        break;
+      case 'pending':
+        filtered = filtered.filter(t => t.status === 'pending');
+        break;
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(t =>
+        t.type.toLowerCase().includes(query) ||
+        t.status.toLowerCase().includes(query) ||
+        (t.signature && t.signature.toLowerCase().includes(query))
+      );
+    }
+
+    return filtered;
+  }, [transactions, transactionFilter, searchQuery]);
+
+  // Export transactions to CSV
+  const handleExportTransactions = useCallback(() => {
+    const filteredTxs = getFilteredTransactions();
+    if (filteredTxs.length === 0) {
+      alert('No transactions to export');
+      return;
+    }
+
+    const headers = ['Date', 'Type', 'Amount', 'Status', 'Transaction ID'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredTxs.map(tx => [
+        formatDate(tx.date),
+        tx.type,
+        tx.private ? 'Confidential' : tx.amount || 0,
+        tx.status,
+        tx.signature || 'N/A'
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `my_payments_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  }, [getFilteredTransactions]);
+
   const renderTabContent = () => {
     if (!isWalletConnected) {
       return null;
@@ -109,7 +173,10 @@ const EmployeeDashboard: React.FC = () => {
                 </div>
                 <div className="transaction-row">
                   <span className="tx-label">Network:</span>
-                  <span className="tx-value">Solana Mainnet</span>
+                  <span className="tx-value">
+                    Solana {networkInfo.isDevnet ? 'Devnet' : 'Mainnet'}
+                    {networkInfo.isDevnet && <span className="badge badge-warning" style={{marginLeft: '8px', fontSize: '10px'}}>DEMO</span>}
+                  </span>
                 </div>
                 <div className="transaction-row">
                   <span className="tx-label">Last Connected:</span>
@@ -186,39 +253,63 @@ const EmployeeDashboard: React.FC = () => {
             <div className="section-header">
               <h3>Payments Received</h3>
               <div className="header-actions">
-                <input 
-                  type="text" 
-                  placeholder="Search payments..." 
-                  className="search-input" 
+                <input
+                  type="text"
+                  placeholder="Search payments..."
+                  className="search-input"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <select className="filter-select">
-                  <option>All Payments</option>
-                  <option>Salary</option>
-                  <option>Bonus</option>
-                  <option>Pending</option>
+                <select
+                  className="filter-select"
+                  value={transactionFilter}
+                  onChange={(e) => setTransactionFilter(e.target.value)}
+                >
+                  <option value="all">All Payments</option>
+                  <option value="salary">Salary</option>
+                  <option value="bonus">Bonus</option>
+                  <option value="pending">Pending</option>
                 </select>
+                <button className="btn btn-secondary btn-small" onClick={handleExportTransactions}>
+                  <span className="material-icons">download</span>
+                  Export
+                </button>
               </div>
             </div>
-            
-            {transactions.length === 0 ? (
+
+            {getFilteredTransactions().length === 0 ? (
               <div className="empty-transactions">
                 <div className="empty-icon">
-                  <span className="material-icons">payment</span>
+                  <span className="material-icons">{transactions.length === 0 ? 'payment' : 'search_off'}</span>
                 </div>
-                <h3>No Payments Received</h3>
+                <h3>{transactions.length === 0 ? 'No Payments Received' : 'No Matching Payments'}</h3>
                 <p>
-                  Your confidential salary and bonus payments from authorized organizations will appear here. 
-                  All payments are protected with enterprise-grade privacy using OnionUSD-P confidential transfers.
+                  {transactions.length === 0
+                    ? 'Your confidential salary and bonus payments from authorized organizations will appear here. All payments are protected with enterprise-grade privacy using OnionUSD-P confidential transfers.'
+                    : `No payments match your current filter "${transactionFilter}" ${searchQuery ? `or search "${searchQuery}"` : ''}. Try adjusting your filters.`
+                  }
                 </p>
-                <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--bg-glass)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-primary)' }}>
-                  <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-sm)', margin: 0 }}>
-                    <strong>Note:</strong> This is a receive-only account. You cannot send payments from this wallet.
-                  </p>
-                </div>
+                {transactions.length === 0 && (
+                  <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--bg-glass)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-primary)' }}>
+                    <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-sm)', margin: 0 }}>
+                      <strong>Note:</strong> This is a receive-only account. You cannot send payments from this wallet.
+                    </p>
+                  </div>
+                )}
+                {transactions.length > 0 && (
+                  <button
+                    className="btn btn-secondary btn-small"
+                    style={{ marginTop: 'var(--space-4)' }}
+                    onClick={() => { setSearchQuery(''); setTransactionFilter('all'); }}
+                  >
+                    <span className="material-icons">clear_all</span>
+                    Clear Filters
+                  </button>
+                )}
               </div>
             ) : (
               <div className="transactions-list">
-                {transactions.map((transaction) => (
+                {getFilteredTransactions().map((transaction) => (
                   <div key={transaction.id} className="transaction-card">
                     <div className="transaction-header">
                       <div className="transaction-type">
@@ -301,7 +392,7 @@ const EmployeeDashboard: React.FC = () => {
                 </div>
                 <div className="card-content">
                   <p>Add an extra layer of security to your account with SMS or authenticator app verification for accessing payment history.</p>
-                  <button className="btn btn-secondary btn-small">
+                  <button className="btn btn-secondary btn-small" onClick={() => setIs2FAModalOpen(true)}>
                     <span className="material-icons">add</span>
                     Enable 2FA
                   </button>
@@ -498,6 +589,61 @@ const EmployeeDashboard: React.FC = () => {
               {renderTabContent()}
             </div>
           </>
+        )}
+
+        {/* 2FA Modal */}
+        {is2FAModalOpen && (
+          <div className="modal-overlay" onClick={() => setIs2FAModalOpen(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Enable Two-Factor Authentication</h2>
+                <button className="modal-close" onClick={() => setIs2FAModalOpen(false)}>
+                  <span className="material-icons">close</span>
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="two-fa-options">
+                  <div className="two-fa-option">
+                    <div className="option-icon">
+                      <span className="material-icons">smartphone</span>
+                    </div>
+                    <div className="option-content">
+                      <h4>Authenticator App</h4>
+                      <p>Use Google Authenticator, Authy, or similar apps for secure time-based codes.</p>
+                      <button className="btn btn-primary btn-small">
+                        <span className="material-icons">qr_code</span>
+                        Set Up Authenticator
+                      </button>
+                    </div>
+                  </div>
+                  <div className="two-fa-option">
+                    <div className="option-icon">
+                      <span className="material-icons">sms</span>
+                    </div>
+                    <div className="option-content">
+                      <h4>SMS Verification</h4>
+                      <p>Receive verification codes via text message to your registered phone number.</p>
+                      <button className="btn btn-secondary btn-small">
+                        <span className="material-icons">phone</span>
+                        Set Up SMS
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="demo-notice" style={{ marginTop: 'var(--space-4)', padding: 'var(--space-3)', background: 'var(--bg-glass)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-primary)' }}>
+                  <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-sm)', margin: 0 }}>
+                    <span className="material-icons" style={{ fontSize: '14px', verticalAlign: 'middle', marginRight: '4px' }}>info</span>
+                    <strong>Demo Mode:</strong> 2FA setup is simulated in this demo environment. In production, this would integrate with Firebase Authentication or a similar service.
+                  </p>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setIs2FAModalOpen(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
