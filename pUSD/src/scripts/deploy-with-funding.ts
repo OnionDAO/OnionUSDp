@@ -46,20 +46,19 @@ async function main() {
     logger.info(`Mint Address: ${pusdToken.mint.address}`);
     logger.info(`Metadata Address: ${pusdToken.metadataAddress}`);
     logger.info(`Transaction Signature: ${pusdToken.signature}`);
-    const tokenInfo = {
+    logger.info("Token deployment info:", {
       mint: pusdToken.mint.address,
       metadata: pusdToken.metadataAddress,
       signature: pusdToken.signature,
       network: argv.network,
       timestamp: new Date().toISOString(),
       supply: argv.supply
-    };
-    // Optionally write token info to file or output
+    });
     logger.info("✅ pUSD token deployment completed!");
 
     // Create confidential mint
-    const mintOutput = confidential.createConfidentialMint();
-    // Parse mint pubkey from output, then continue with CLI for account creation, etc.
+    const confidentialMint = confidential.createConfidentialMint();
+    logger.info("Confidential mint created:", confidentialMint);
   } catch (error) {
     logger.error("❌ Failed to deploy pUSD token:", error);
     process.exit(1);

@@ -1,4 +1,3 @@
-"use strict";
 /**
  * Test Confidential Integration
  *
@@ -9,52 +8,18 @@
  * 4. Apply pending balances
  * 5. Withdraw from confidential balance
  */
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-const web3_js_1 = require("@solana/web3.js");
-const treasury_1 = require("../lib/treasury");
-const fs_1 = require("fs");
-const path = __importStar(require("path"));
+import { Connection, Keypair, PublicKey } from '@solana/web3.js';
+import { TreasuryService } from '../lib/treasury';
+import { promises as fs } from 'fs';
+import * as path from 'path';
 // Configuration
 const RPC_URL = 'http://127.0.0.1:8899'; // Local Surfpool
-const connection = new web3_js_1.Connection(RPC_URL, 'confirmed');
+const connection = new Connection(RPC_URL, 'confirmed');
 async function main() {
     console.log('🔒 Testing Confidential Transfer Integration\n');
     try {
         // Initialize treasury service
-        const treasury = new treasury_1.TreasuryService(connection);
+        const treasury = new TreasuryService(connection);
         await treasury.init();
         console.log('✅ Treasury service initialized');
         // Load or create test keypairs
@@ -152,14 +117,14 @@ async function main() {
 async function loadOrGenerateKeypair(filename) {
     const keypairPath = path.resolve(__dirname, `../../keypairs/${filename}`);
     try {
-        await fs_1.promises.mkdir(path.dirname(keypairPath), { recursive: true });
-        const exists = await fs_1.promises.stat(keypairPath).then(() => true).catch(() => false);
+        await fs.mkdir(path.dirname(keypairPath), { recursive: true });
+        const exists = await fs.stat(keypairPath).then(() => true).catch(() => false);
         if (exists) {
-            const secret = JSON.parse(await fs_1.promises.readFile(keypairPath, 'utf-8'));
-            return web3_js_1.Keypair.fromSecretKey(Uint8Array.from(secret));
+            const secret = JSON.parse(await fs.readFile(keypairPath, 'utf-8'));
+            return Keypair.fromSecretKey(Uint8Array.from(secret));
         }
-        const kp = web3_js_1.Keypair.generate();
-        await fs_1.promises.writeFile(keypairPath, JSON.stringify(Array.from(kp.secretKey)));
+        const kp = Keypair.generate();
+        await fs.writeFile(keypairPath, JSON.stringify(Array.from(kp.secretKey)));
         return kp;
     }
     catch (err) {
@@ -167,15 +132,15 @@ async function loadOrGenerateKeypair(filename) {
     }
 }
 async function getOrCreateToken2022ATA(connection, mint, owner, payer) {
-    const { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, ASSOCIATED_TOKEN_PROGRAM_ID } = await Promise.resolve().then(() => __importStar(require('@solana/spl-token')));
-    const TOKEN_2022_PROGRAM_ID = new web3_js_1.PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
+    const { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, ASSOCIATED_TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
+    const TOKEN_2022_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
     const ata = await getAssociatedTokenAddress(mint, owner, false, TOKEN_2022_PROGRAM_ID);
     const info = await connection.getAccountInfo(ata);
     if (info)
         return ata;
     const ix = createAssociatedTokenAccountInstruction(payer.publicKey, ata, owner, mint, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-    const { Transaction, sendAndConfirmTransaction } = await Promise.resolve().then(() => __importStar(require('@solana/web3.js')));
+    const { Transaction, sendAndConfirmTransaction } = await import('@solana/web3.js');
     const tx = new Transaction({
         feePayer: payer.publicKey,
         blockhash,
@@ -188,3 +153,4 @@ async function getOrCreateToken2022ATA(connection, mint, owner, payer) {
 if (require.main === module) {
     main().catch(console.error);
 }
+//# sourceMappingURL=test-confidential-integration.js.map

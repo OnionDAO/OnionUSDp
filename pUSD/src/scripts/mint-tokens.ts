@@ -13,7 +13,7 @@ const argv = yargs(hideBin(process.argv))
   .argv;
 
 
-function loadPubkeyFromKeypairFile(path) {
+function loadPubkeyFromKeypairFile(path: string) {
   const fs = require('fs');
   const raw = fs.readFileSync(path, 'utf-8');
   const arr = JSON.parse(raw);
@@ -26,8 +26,8 @@ async function main() {
   try {
     console.log('🪙 Minting pUSD tokens using confidential CLI...');
     const mintPubkey = argv.mint;
-    const payerPubkey = loadPubkeyFromKeypairFile(argv.payer);
     const userPubkey = loadPubkeyFromKeypairFile(argv.user);
+    console.log(`Using payer keypair from: ${argv.payer}`);
     if (argv.confidential) {
       console.log('🔒 Using confidential transfer for minting');
       // Create account for user if needed

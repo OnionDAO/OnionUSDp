@@ -1,21 +1,50 @@
-FROM rust:bullseye
+# OnionUSD-P Frontend Dockerfile
+# Multi-stage build for optimized production image
 
-COPY . ./prop-pool
+# Stage 1: Build
+FROM node:20-alpine AS builder
 
-WORKDIR /prop-pool
+WORKDIR /app
 
-# Update and install dependencies
-RUN apt-get update && \
-    apt-get install -y pkg-config libudev-dev libssl-dev git libclang-dev clang && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Copy package files for dependency installation
+COPY frontend/onion-dao/package*.json ./
 
-# Clone and install surfpool from source
-RUN git clone https://github.com/txtx/surfpool.git ./surfpool && \
-    cargo install --path ./surfpool/crates/cli --locked --force
+# Install dependencies
+RUN npm ci
 
-# Expose common Solana ports
-EXPOSE 8899 8900 8080
+# Copy source code
+COPY frontend/onion-dao/ .
 
-# Set the command to run surfpool
-CMD ["surfpool", "--rpc-url", ${MAINNET_RPC_URL}]
+# Build arguments for environment variables (passed at build time)
+ARG VITE_FIREBASE_API_KEY
+ARG VITE_FIREBASE_AUTH_DOMAIN
+ARG VITE_FIREBASE_PROJECT_ID
+ARG VITE_FIREBASE_STORAGE_BUCKET
+ARG VITE_FIREBASE_MESSAGING_SENDER_ID
+ARG VITE_FIREBASE_APP_ID
+ARG VITE_SOLANA_NETWORK=devnet
+ARG VITE_SOLANA_RPC_URL=https://api.devnet.solana.com
+
+# Build the application
+RUN npm run build
+
+# Stage 2: Production
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+# Install serve for static file hosting
+RUN npm install -g serve
+
+# Copy built assets from builder stage
+COPY --from=builder /app/dist ./dist
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+
+# Run the application
+CMD ["serve", "-s", "dist", "-l", "3000"]

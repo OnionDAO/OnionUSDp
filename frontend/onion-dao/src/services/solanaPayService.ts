@@ -14,18 +14,35 @@ import type { Employee } from '../types';
 import { BigNumber } from 'bignumber.js';
 
 // Solana Pay Configuration
-const SOLANA_PAY_CONFIG = {
-  // Use devnet for development, mainnet for production
-  endpoint: process.env.NODE_ENV === 'production' 
+// Environment-based configuration for network and token addresses
+const SOLANA_NETWORK = import.meta.env.VITE_SOLANA_NETWORK || 'devnet';
+const RPC_URL = import.meta.env.VITE_SOLANA_RPC_URL ||
+  (SOLANA_NETWORK === 'mainnet-beta'
     ? 'https://api.mainnet-beta.solana.com'
-    : 'https://api.devnet.solana.com',
-  // Corporate treasury wallet (this should come from user's connected wallet)
-  corporateWallet: '', // Will be set dynamically
-  // USDC mint address (devnet)
-  usdcMint: new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU'), // Devnet USDC
-  // OnionUSD-P mint (when deployed)
-  onionUSDMint: new PublicKey('11111111111111111111111111111111'), // Placeholder
+    : 'https://api.devnet.solana.com');
+
+// Token mint addresses from environment or defaults
+const PUSD_MINT = import.meta.env.VITE_PUSD_MINT_ADDRESS || '8GzpAzmBLSHsNQhGFwhokEDziXJAQm7C9P7x3YQYqf4x';
+const USDC_MINT = import.meta.env.VITE_USDC_MINT_ADDRESS || '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU';
+
+const SOLANA_PAY_CONFIG = {
+  network: SOLANA_NETWORK,
+  endpoint: RPC_URL,
+  // Corporate treasury wallet (set dynamically from connected wallet)
+  corporateWallet: '',
+  // USDC mint address
+  usdcMint: new PublicKey(USDC_MINT),
+  // OnionUSD-P (pUSD) mint address
+  onionUSDMint: new PublicKey(PUSD_MINT),
 };
+
+// Export network info for display in UI
+export const getNetworkInfo = () => ({
+  network: SOLANA_NETWORK,
+  isDevnet: SOLANA_NETWORK === 'devnet',
+  isMainnet: SOLANA_NETWORK === 'mainnet-beta',
+  rpcUrl: RPC_URL,
+});
 
 export interface PaymentRequest {
   id: string;

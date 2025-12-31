@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.MAINNET = exports.DEVNET = void 0;
-exports.DEVNET = {
+export const DEVNET = {
     MINT: '8GzpAzmBLSHsNQhGFwhokEDziXJAQm7C9P7x3YQYqf4x',
     TOKEN_PROGRAM: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
     TOKEN_2022_PROGRAM: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',
@@ -10,7 +7,7 @@ exports.DEVNET = {
     RENT: 'SysvarRent111111111111111111111111111111111',
     METADATA_PROGRAM: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
 };
-exports.MAINNET = {
+export const MAINNET = {
     MINT: 'So11111111111111111111111111111111111111112', // Example mainnet mint
     TOKEN_PROGRAM: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
     TOKEN_2022_PROGRAM: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',

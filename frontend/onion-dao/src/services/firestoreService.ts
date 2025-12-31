@@ -135,7 +135,34 @@ export const transactionService = {
       createdAt: now,
       updatedAt: now
     };
-    
+
+    const docRef = await addDoc(collection(db, COLLECTIONS.TRANSACTIONS), transaction);
+    return docRef.id;
+  },
+
+  // Add transaction (simplified interface for Solana Pay integration)
+  async addTransaction(data: {
+    corporationId: string;
+    employeeId?: string;
+    amount: number;
+    type: Transaction['type'];
+    status: Transaction['status'];
+    date: string;
+    signature?: string;
+    private?: boolean;
+    simulated?: boolean;
+  }): Promise<string> {
+    const now = new Date();
+    const transaction = {
+      ...data,
+      recipient: data.employeeId || 'external',
+      recipientId: data.employeeId,
+      private: data.private ?? true,
+      simulated: data.simulated ?? false,
+      createdAt: now,
+      updatedAt: now
+    };
+
     const docRef = await addDoc(collection(db, COLLECTIONS.TRANSACTIONS), transaction);
     return docRef.id;
   },

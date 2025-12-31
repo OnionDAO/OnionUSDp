@@ -1,5 +1,5 @@
 import { PublicKey } from '@solana/web3.js';
-import { DEVNET, MAINNET } from './networks';
+import { DEVNET } from './networks';
 
 // Network constants
 export const NETWORKS = {
@@ -54,8 +54,9 @@ export const ERROR_MESSAGES = {
 } as const;
 
 
-const PUSD_CONFIG = {
-    mint: "8GzpAzmBLSHsNQhGFwhokEDziXJAQm7C9P7x3YQYqf4x",
-    network: "devnet",
-    program: "Token2022"
-  };
+// pUSD Configuration - exported for use in other modules
+export const PUSD_CONFIG = {
+  mint: "8GzpAzmBLSHsNQhGFwhokEDziXJAQm7C9P7x3YQYqf4x",
+  network: "devnet",
+  program: "Token2022"
+} as const;

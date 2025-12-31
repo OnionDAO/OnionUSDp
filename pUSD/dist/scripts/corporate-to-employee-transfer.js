@@ -1,16 +1,11 @@
 #!/usr/bin/env node
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const web3_js_1 = require("@solana/web3.js");
-const treasury_1 = require("../lib/treasury");
-const fs_1 = require("fs");
-const yargs_1 = __importDefault(require("yargs"));
-const helpers_1 = require("yargs/helpers");
+import { Connection, Keypair } from '@solana/web3.js';
+import { TreasuryService } from '../lib/treasury';
+import { promises as fs } from 'fs';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 async function main() {
-    const argv = await (0, yargs_1.default)((0, helpers_1.hideBin)(process.argv))
+    const argv = await yargs(hideBin(process.argv))
         .option('corporate', { type: 'string', demandOption: true, describe: 'Path to corporate user keypair JSON' })
         .option('employee', { type: 'string', demandOption: true, describe: 'Path to employee user keypair JSON' })
         .option('amount', { type: 'number', demandOption: true, describe: 'Amount of pUSDC to transfer' })
@@ -36,9 +31,9 @@ async function main() {
             : argv.network === 'localnet'
                 ? 'http://127.0.0.1:8899'
                 : 'https://api.devnet.solana.com';
-        const connection = new web3_js_1.Connection(endpoint, 'confirmed');
+        const connection = new Connection(endpoint, 'confirmed');
         // Initialize treasury service
-        const treasury = new treasury_1.TreasuryService(connection);
+        const treasury = new TreasuryService(connection);
         await treasury.init();
         if (argv.confidential) {
             console.log('🔒 Executing confidential transfer using Token 2022...');
@@ -77,8 +72,8 @@ async function main() {
     }
 }
 async function loadKeypair(keypairPath) {
-    const secret = JSON.parse(await fs_1.promises.readFile(keypairPath, 'utf-8'));
-    return web3_js_1.Keypair.fromSecretKey(Uint8Array.from(secret));
+    const secret = JSON.parse(await fs.readFile(keypairPath, 'utf-8'));
+    return Keypair.fromSecretKey(Uint8Array.from(secret));
 }
 main();
 //# sourceMappingURL=corporate-to-employee-transfer.js.map

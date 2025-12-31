@@ -1,4 +1,3 @@
-"use strict";
 /**
  * TreasuryService.ts
  *
@@ -11,57 +10,22 @@
  * - Auto-generated or personal wallet support
  * - Yield wallet sub-account for future yield generation
  */
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.TreasuryService = exports.PUSDC_DECIMALS = exports.USDC_DECIMALS = exports.PUSDC_MINT = exports.USDC_MINT = void 0;
-const web3_js_1 = require("@solana/web3.js");
-const spl_token_1 = require("@solana/spl-token");
-const fs_1 = require("fs");
-const path = __importStar(require("path"));
+import { Keypair, PublicKey, Transaction, sendAndConfirmTransaction, } from '@solana/web3.js';
+import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, getMint, createTransferInstruction, createMintToInstruction, createBurnInstruction, ASSOCIATED_TOKEN_PROGRAM_ID, } from '@solana/spl-token';
+import { promises as fs } from 'fs';
+import * as path from 'path';
 // Import confidential transfer utilities
 const confidential = require('./confidential');
 /**
  * Constants for USDC and pUSDC
  */
-exports.USDC_MINT = new web3_js_1.PublicKey('6zNgemLNqvsTga2a4AoGKexuYG7zYWqRAtuf85JYDoXq');
-exports.PUSDC_MINT = new web3_js_1.PublicKey('42YkeT6vc4DFmn2mPWg2wGoQtBTpNtqoEpJkU4dLZVRN');
-exports.USDC_DECIMALS = 6;
-exports.PUSDC_DECIMALS = 9;
-const DECIMAL_MULTIPLIER = 10 ** (exports.PUSDC_DECIMALS - exports.USDC_DECIMALS);
+export const USDC_MINT = new PublicKey('6zNgemLNqvsTga2a4AoGKexuYG7zYWqRAtuf85JYDoXq');
+export const PUSDC_MINT = new PublicKey('42YkeT6vc4DFmn2mPWg2wGoQtBTpNtqoEpJkU4dLZVRN');
+export const USDC_DECIMALS = 6;
+export const PUSDC_DECIMALS = 9;
+const DECIMAL_MULTIPLIER = 10 ** (PUSDC_DECIMALS - USDC_DECIMALS);
 // Token 2022 Program ID
-const TOKEN_2022_PROGRAM_ID = new web3_js_1.PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
+const TOKEN_2022_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
 // Fee constants
 const CORPORATE_WITHDRAWAL_FEE_BPS = 100; // 1% = 100 basis points
 const REVOKABLE_PERIOD_SECONDS = 30 * 60; // 30 minutes
@@ -74,14 +38,14 @@ const YIELD_WALLET_PATH = path.resolve(__dirname, '../../keypairs/yield-wallet.j
  */
 async function loadOrGenerateKeypair(keypairPath) {
     try {
-        await fs_1.promises.mkdir(path.dirname(keypairPath), { recursive: true });
-        const exists = await fs_1.promises.stat(keypairPath).then(() => true).catch(() => false);
+        await fs.mkdir(path.dirname(keypairPath), { recursive: true });
+        const exists = await fs.stat(keypairPath).then(() => true).catch(() => false);
         if (exists) {
-            const secret = JSON.parse(await fs_1.promises.readFile(keypairPath, 'utf-8'));
-            return web3_js_1.Keypair.fromSecretKey(Uint8Array.from(secret));
+            const secret = JSON.parse(await fs.readFile(keypairPath, 'utf-8'));
+            return Keypair.fromSecretKey(Uint8Array.from(secret));
         }
-        const kp = web3_js_1.Keypair.generate();
-        await fs_1.promises.writeFile(keypairPath, JSON.stringify(Array.from(kp.secretKey)));
+        const kp = Keypair.generate();
+        await fs.writeFile(keypairPath, JSON.stringify(Array.from(kp.secretKey)));
         return kp;
     }
     catch (err) {
@@ -92,18 +56,18 @@ async function loadOrGenerateKeypair(keypairPath) {
  * Ensure a Token 2022 associated token account exists for a given mint and owner.
  */
 async function getOrCreateToken2022ATA(connection, mint, owner, payer) {
-    const ata = await (0, spl_token_1.getAssociatedTokenAddress)(mint, owner, false, TOKEN_2022_PROGRAM_ID);
+    const ata = await getAssociatedTokenAddress(mint, owner, false, TOKEN_2022_PROGRAM_ID);
     const info = await connection.getAccountInfo(ata);
     if (info)
         return ata;
-    const ix = (0, spl_token_1.createAssociatedTokenAccountInstruction)(payer.publicKey, ata, owner, mint, TOKEN_2022_PROGRAM_ID, spl_token_1.ASSOCIATED_TOKEN_PROGRAM_ID);
+    const ix = createAssociatedTokenAccountInstruction(payer.publicKey, ata, owner, mint, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-    const tx = new web3_js_1.Transaction({
+    const tx = new Transaction({
         feePayer: payer.publicKey,
         blockhash,
         lastValidBlockHeight,
     }).add(ix);
-    await (0, web3_js_1.sendAndConfirmTransaction)(connection, tx, [payer]);
+    await sendAndConfirmTransaction(connection, tx, [payer]);
     return ata;
 }
 /**
@@ -125,13 +89,13 @@ function calculateFee(amount, feeBps) {
 /**
  * Enhanced TreasuryService for corporate treasury management
  */
-class TreasuryService {
+export class TreasuryService {
     constructor(connection) {
         this.connection = connection;
         this.revokableTransactions = new Map();
         // Add public access to constants
-        this.PUSDC_MINT = exports.PUSDC_MINT;
-        this.USDC_MINT = exports.USDC_MINT;
+        this.PUSDC_MINT = PUSDC_MINT;
+        this.USDC_MINT = USDC_MINT;
     }
     /**
      * Initialize all treasury components
@@ -145,10 +109,10 @@ class TreasuryService {
         this.corporateAuthority = this.corporateMultisig.publicKey;
         this.yieldAuthority = this.yieldWallet.publicKey;
         // Create ATAs for all components using Token 2022
-        this.treasuryUSDC = await getOrCreateToken2022ATA(this.connection, exports.USDC_MINT, this.treasuryAuthority, this.treasuryKeypair);
-        this.corporateUSDC = await getOrCreateToken2022ATA(this.connection, exports.USDC_MINT, this.corporateAuthority, this.treasuryKeypair);
-        this.yieldUSDC = await getOrCreateToken2022ATA(this.connection, exports.USDC_MINT, this.yieldAuthority, this.treasuryKeypair);
-        this.yieldPUSDC = await getOrCreateToken2022ATA(this.connection, exports.PUSDC_MINT, this.yieldAuthority, this.treasuryKeypair);
+        this.treasuryUSDC = await getOrCreateToken2022ATA(this.connection, USDC_MINT, this.treasuryAuthority, this.treasuryKeypair);
+        this.corporateUSDC = await getOrCreateToken2022ATA(this.connection, USDC_MINT, this.corporateAuthority, this.treasuryKeypair);
+        this.yieldUSDC = await getOrCreateToken2022ATA(this.connection, USDC_MINT, this.yieldAuthority, this.treasuryKeypair);
+        this.yieldPUSDC = await getOrCreateToken2022ATA(this.connection, PUSDC_MINT, this.yieldAuthority, this.treasuryKeypair);
         // Verify initial invariant
         if (!(await this.checkPegInvariant())) {
             console.warn('Warning: pUSDC supply does not match collateral reserves at init');
@@ -158,7 +122,7 @@ class TreasuryService {
      * Generate a new employee wallet
      */
     async generateEmployeeWallet(branchId) {
-        const keypair = web3_js_1.Keypair.generate();
+        const keypair = Keypair.generate();
         const account = {
             publicKey: keypair.publicKey,
             isEmployee: true,
@@ -168,7 +132,7 @@ class TreasuryService {
         };
         // Save employee keypair
         const employeePath = path.resolve(__dirname, `../../keypairs/employee-${branchId}-${Date.now()}.json`);
-        await fs_1.promises.writeFile(employeePath, JSON.stringify(Array.from(keypair.secretKey)));
+        await fs.writeFile(employeePath, JSON.stringify(Array.from(keypair.secretKey)));
         return { keypair, account };
     }
     /**
@@ -189,11 +153,11 @@ class TreasuryService {
     async buildCorporateDepositTx(user, uiAmount) {
         if (uiAmount <= 0)
             throw new Error('Deposit amount must be positive');
-        const usdcUnits = toAtomic(uiAmount, exports.USDC_DECIMALS);
+        const usdcUnits = toAtomic(uiAmount, USDC_DECIMALS);
         const pusdcUnits = usdcUnits * BigInt(DECIMAL_MULTIPLIER);
         // Fetch balances using Token 2022 ATAs
-        const userUSDCATA = await getOrCreateToken2022ATA(this.connection, exports.USDC_MINT, user, this.treasuryKeypair);
-        const userPUSDCATA = await getOrCreateToken2022ATA(this.connection, exports.PUSDC_MINT, user, this.treasuryKeypair);
+        const userUSDCATA = await getOrCreateToken2022ATA(this.connection, USDC_MINT, user, this.treasuryKeypair);
+        const userPUSDCATA = await getOrCreateToken2022ATA(this.connection, PUSDC_MINT, user, this.treasuryKeypair);
         const userBal = await this.connection.getTokenAccountBalance(userUSDCATA).then(r => BigInt(r.value.amount));
         if (userBal < usdcUnits)
             throw new Error('Insufficient USDC balance');
@@ -201,13 +165,13 @@ class TreasuryService {
         const pusdcMintAuthority = await loadOrGenerateKeypair(path.resolve(__dirname, '../../keypairs/pusdc-mint.json'));
         // Build tx
         const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
-        const tx = new web3_js_1.Transaction({
+        const tx = new Transaction({
             feePayer: user,
             blockhash,
             lastValidBlockHeight,
         })
-            .add((0, spl_token_1.createTransferInstruction)(userUSDCATA, this.corporateUSDC, user, Number(usdcUnits), [], TOKEN_2022_PROGRAM_ID))
-            .add((0, spl_token_1.createMintToInstruction)(exports.PUSDC_MINT, userPUSDCATA, pusdcMintAuthority.publicKey, Number(pusdcUnits), [], TOKEN_2022_PROGRAM_ID));
+            .add(createTransferInstruction(userUSDCATA, this.corporateUSDC, user, Number(usdcUnits), [], TOKEN_2022_PROGRAM_ID))
+            .add(createMintToInstruction(PUSDC_MINT, userPUSDCATA, pusdcMintAuthority.publicKey, Number(pusdcUnits), [], TOKEN_2022_PROGRAM_ID));
         return { tx, signers: [pusdcMintAuthority] };
     }
     /**
@@ -216,30 +180,30 @@ class TreasuryService {
     async buildCorporateWithdrawTx(user, uiAmount) {
         if (uiAmount <= 0)
             throw new Error('Withdraw amount must be positive');
-        const pusdcUnits = toAtomic(uiAmount, exports.PUSDC_DECIMALS);
-        const usdcUnits = toAtomic(uiAmount, exports.USDC_DECIMALS);
+        const pusdcUnits = toAtomic(uiAmount, PUSDC_DECIMALS);
+        const usdcUnits = toAtomic(uiAmount, USDC_DECIMALS);
         const feeAmount = calculateFee(usdcUnits, CORPORATE_WITHDRAWAL_FEE_BPS);
         const netUsdcAmount = usdcUnits - feeAmount;
         // Fetch balances using Token 2022 ATAs
-        const userPUSDCATA = await getOrCreateToken2022ATA(this.connection, exports.PUSDC_MINT, user, this.treasuryKeypair);
+        const userPUSDCATA = await getOrCreateToken2022ATA(this.connection, PUSDC_MINT, user, this.treasuryKeypair);
         const userPBal = await this.connection.getTokenAccountBalance(userPUSDCATA).then(r => BigInt(r.value.amount));
         if (userPBal < pusdcUnits)
             throw new Error('Insufficient pUSDC balance');
         const corporateBal = await this.connection.getTokenAccountBalance(this.corporateUSDC).then(r => BigInt(r.value.amount));
         if (corporateBal < usdcUnits)
             throw new Error('Corporate treasury undercollateralized');
-        const userUSDCATA = await getOrCreateToken2022ATA(this.connection, exports.USDC_MINT, user, this.treasuryKeypair);
+        const userUSDCATA = await getOrCreateToken2022ATA(this.connection, USDC_MINT, user, this.treasuryKeypair);
         // Build tx with revokable approval
         const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
         const expiresAt = new Date(Date.now() + REVOKABLE_PERIOD_SECONDS * 1000);
-        const tx = new web3_js_1.Transaction({
+        const tx = new Transaction({
             feePayer: user,
             blockhash,
             lastValidBlockHeight,
         })
-            .add((0, spl_token_1.createBurnInstruction)(userPUSDCATA, exports.PUSDC_MINT, user, Number(pusdcUnits), [], TOKEN_2022_PROGRAM_ID))
-            .add((0, spl_token_1.createTransferInstruction)(this.corporateUSDC, userUSDCATA, this.corporateAuthority, Number(netUsdcAmount), [], TOKEN_2022_PROGRAM_ID))
-            .add((0, spl_token_1.createTransferInstruction)(this.corporateUSDC, this.yieldUSDC, this.corporateAuthority, Number(feeAmount), [], TOKEN_2022_PROGRAM_ID));
+            .add(createBurnInstruction(userPUSDCATA, PUSDC_MINT, user, Number(pusdcUnits), [], TOKEN_2022_PROGRAM_ID))
+            .add(createTransferInstruction(this.corporateUSDC, userUSDCATA, this.corporateAuthority, Number(netUsdcAmount), [], TOKEN_2022_PROGRAM_ID))
+            .add(createTransferInstruction(this.corporateUSDC, this.yieldUSDC, this.corporateAuthority, Number(feeAmount), [], TOKEN_2022_PROGRAM_ID));
         const transactionId = `${user.toBase58()}-${Date.now()}`;
         const corporateTx = {
             signature: '',
@@ -259,11 +223,11 @@ class TreasuryService {
     async buildEmployeeDepositTx(user, uiAmount) {
         if (uiAmount <= 0)
             throw new Error('Deposit amount must be positive');
-        const usdcUnits = toAtomic(uiAmount, exports.USDC_DECIMALS);
+        const usdcUnits = toAtomic(uiAmount, USDC_DECIMALS);
         const pusdcUnits = usdcUnits * BigInt(DECIMAL_MULTIPLIER);
         // Fetch balances using Token 2022 ATAs
-        const userUSDCATA = await getOrCreateToken2022ATA(this.connection, exports.USDC_MINT, user, this.treasuryKeypair);
-        const userPUSDCATA = await getOrCreateToken2022ATA(this.connection, exports.PUSDC_MINT, user, this.treasuryKeypair);
+        const userUSDCATA = await getOrCreateToken2022ATA(this.connection, USDC_MINT, user, this.treasuryKeypair);
+        const userPUSDCATA = await getOrCreateToken2022ATA(this.connection, PUSDC_MINT, user, this.treasuryKeypair);
         const userBal = await this.connection.getTokenAccountBalance(userUSDCATA).then(r => BigInt(r.value.amount));
         if (userBal < usdcUnits)
             throw new Error('Insufficient USDC balance');
@@ -271,13 +235,13 @@ class TreasuryService {
         const pusdcMintAuthority = await loadOrGenerateKeypair(path.resolve(__dirname, '../../keypairs/pusdc-mint.json'));
         // Build tx
         const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
-        const tx = new web3_js_1.Transaction({
+        const tx = new Transaction({
             feePayer: user,
             blockhash,
             lastValidBlockHeight,
         })
-            .add((0, spl_token_1.createTransferInstruction)(userUSDCATA, this.treasuryUSDC, user, Number(usdcUnits), [], TOKEN_2022_PROGRAM_ID))
-            .add((0, spl_token_1.createMintToInstruction)(exports.PUSDC_MINT, userPUSDCATA, pusdcMintAuthority.publicKey, Number(pusdcUnits), [], TOKEN_2022_PROGRAM_ID));
+            .add(createTransferInstruction(userUSDCATA, this.treasuryUSDC, user, Number(usdcUnits), [], TOKEN_2022_PROGRAM_ID))
+            .add(createMintToInstruction(PUSDC_MINT, userPUSDCATA, pusdcMintAuthority.publicKey, Number(pusdcUnits), [], TOKEN_2022_PROGRAM_ID));
         return { tx, signers: [pusdcMintAuthority] };
     }
     /**
@@ -286,26 +250,26 @@ class TreasuryService {
     async buildEmployeeWithdrawTx(user, uiAmount) {
         if (uiAmount <= 0)
             throw new Error('Withdraw amount must be positive');
-        const pusdcUnits = toAtomic(uiAmount, exports.PUSDC_DECIMALS);
-        const usdcUnits = toAtomic(uiAmount, exports.USDC_DECIMALS);
+        const pusdcUnits = toAtomic(uiAmount, PUSDC_DECIMALS);
+        const usdcUnits = toAtomic(uiAmount, USDC_DECIMALS);
         // Fetch balances using Token 2022 ATAs
-        const userPUSDCATA = await getOrCreateToken2022ATA(this.connection, exports.PUSDC_MINT, user, this.treasuryKeypair);
+        const userPUSDCATA = await getOrCreateToken2022ATA(this.connection, PUSDC_MINT, user, this.treasuryKeypair);
         const userPBal = await this.connection.getTokenAccountBalance(userPUSDCATA).then(r => BigInt(r.value.amount));
         if (userPBal < pusdcUnits)
             throw new Error('Insufficient pUSDC balance');
         const treasuryBal = await this.connection.getTokenAccountBalance(this.treasuryUSDC).then(r => BigInt(r.value.amount));
         if (treasuryBal < usdcUnits)
             throw new Error('Treasury undercollateralized');
-        const userUSDCATA = await getOrCreateToken2022ATA(this.connection, exports.USDC_MINT, user, this.treasuryKeypair);
+        const userUSDCATA = await getOrCreateToken2022ATA(this.connection, USDC_MINT, user, this.treasuryKeypair);
         // Build tx
         const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
-        const tx = new web3_js_1.Transaction({
+        const tx = new Transaction({
             feePayer: user,
             blockhash,
             lastValidBlockHeight,
         })
-            .add((0, spl_token_1.createBurnInstruction)(userPUSDCATA, exports.PUSDC_MINT, user, Number(pusdcUnits), [], TOKEN_2022_PROGRAM_ID))
-            .add((0, spl_token_1.createTransferInstruction)(this.treasuryUSDC, userUSDCATA, this.treasuryAuthority, Number(usdcUnits), [], TOKEN_2022_PROGRAM_ID));
+            .add(createBurnInstruction(userPUSDCATA, PUSDC_MINT, user, Number(pusdcUnits), [], TOKEN_2022_PROGRAM_ID))
+            .add(createTransferInstruction(this.treasuryUSDC, userUSDCATA, this.treasuryAuthority, Number(usdcUnits), [], TOKEN_2022_PROGRAM_ID));
         return { tx, signers: [this.treasuryKeypair] };
     }
     /**
@@ -346,7 +310,7 @@ class TreasuryService {
      * Check if total pUSDC supply equals USDC reserves × multiplier.
      */
     async checkPegInvariant() {
-        const mintInfo = await (0, spl_token_1.getMint)(this.connection, exports.PUSDC_MINT);
+        const mintInfo = await getMint(this.connection, PUSDC_MINT);
         const totalSupply = BigInt(mintInfo.supply.toString());
         const treasuryReserves = BigInt((await this.connection.getTokenAccountBalance(this.treasuryUSDC)).value.amount);
         const corporateReserves = BigInt((await this.connection.getTokenAccountBalance(this.corporateUSDC)).value.amount);
@@ -358,7 +322,7 @@ class TreasuryService {
      */
     async redeemPUSDC(userKeypair, uiAmount) {
         const { tx, signers } = await this.buildEmployeeWithdrawTx(userKeypair.publicKey, uiAmount);
-        const signature = await (0, web3_js_1.sendAndConfirmTransaction)(this.connection, tx, [userKeypair, ...signers]);
+        const signature = await sendAndConfirmTransaction(this.connection, tx, [userKeypair, ...signers]);
         return signature;
     }
     /**
@@ -368,7 +332,7 @@ class TreasuryService {
         if (uiAmount <= 0)
             throw new Error('Transfer amount must be positive');
         // Get the employee's pUSDC account
-        const employeePUSDCATA = await getOrCreateToken2022ATA(this.connection, exports.PUSDC_MINT, employeeUser, this.treasuryKeypair);
+        const employeePUSDCATA = await getOrCreateToken2022ATA(this.connection, PUSDC_MINT, employeeUser, this.treasuryKeypair);
         // Configure employee account for confidential transfers
         try {
             await this.configureAccountForConfidentialTransfers(employeePUSDCATA);
@@ -378,7 +342,7 @@ class TreasuryService {
         }
         // Execute confidential transfer using CLI
         console.log(`🔒 Executing confidential transfer from corporate to employee ${employeeUser.toBase58()}`);
-        const result = confidential.transferConfidentialTokens(exports.PUSDC_MINT.toBase58(), uiAmount, employeePUSDCATA.toBase58());
+        const result = confidential.transferConfidentialTokens(PUSDC_MINT.toBase58(), uiAmount, employeePUSDCATA.toBase58());
         const transactionId = `${corporateUser.toBase58()}-${employeeUser.toBase58()}-${Date.now()}`;
         const corporateTx = {
             signature: result,
@@ -415,7 +379,7 @@ class TreasuryService {
             throw new Error('Deposit amount must be positive');
         try {
             console.log(`🔒 Depositing ${uiAmount} pUSDC into confidential balance for ${accountPubkey.toBase58()}`);
-            const result = confidential.depositConfidentialTokens(exports.PUSDC_MINT.toBase58(), uiAmount, accountPubkey.toBase58());
+            const result = confidential.depositConfidentialTokens(PUSDC_MINT.toBase58(), uiAmount, accountPubkey.toBase58());
             console.log('✅ Confidential deposit executed:', result);
             return result;
         }
@@ -445,7 +409,7 @@ class TreasuryService {
             throw new Error('Withdraw amount must be positive');
         try {
             console.log(`🔒 Withdrawing ${uiAmount} pUSDC from confidential balance for ${accountPubkey.toBase58()}`);
-            const result = confidential.withdrawConfidentialTokens(exports.PUSDC_MINT.toBase58(), uiAmount, accountPubkey.toBase58());
+            const result = confidential.withdrawConfidentialTokens(PUSDC_MINT.toBase58(), uiAmount, accountPubkey.toBase58());
             console.log('✅ Confidential withdrawal executed:', result);
             return result;
         }
@@ -461,7 +425,7 @@ class TreasuryService {
         const { transactionId } = await this.executeCorporateToEmployeeConfidentialTransfer(corporateUser, employeeUser, uiAmount);
         // Return a dummy transaction since we're using CLI
         const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
-        const tx = new web3_js_1.Transaction({
+        const tx = new Transaction({
             feePayer: corporateUser,
             blockhash,
             lastValidBlockHeight,
@@ -477,4 +441,4 @@ class TreasuryService {
         return result;
     }
 }
-exports.TreasuryService = TreasuryService;
+//# sourceMappingURL=treasury.js.map
